@@ -12,6 +12,7 @@ Backtest muss also nichts mehr heruntergeladen werden.
 
 import lzma
 import struct
+import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -83,14 +84,22 @@ def _tag_laden(dukas_symbol, tag, bereich, ordner):
                      *map(float, z.split(",")[1:])))) for z in zeilen]
     url = URL.format(sym=dukas_symbol, jahr=tag.year, monat=tag.month - 1, tag=tag.day)
     anfrage = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
-        with urllib.request.urlopen(anfrage, timeout=30) as antwort:
-            roh = antwort.read()
-    except urllib.error.HTTPError as fehler:
-        if fehler.code == 404:
-            roh = b""
-        else:
-            raise
+    roh = None
+    for versuch in range(5):  # Dukascopy trennt bei zu vielen Anfragen kurz die Verbindung -> warten, nochmal
+        try:
+            with urllib.request.urlopen(anfrage, timeout=30) as antwort:
+                roh = antwort.read()
+            break
+        except urllib.error.HTTPError as fehler:
+            if fehler.code == 404:
+                roh = b""
+                break
+            if versuch == 4:
+                raise
+        except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
+            if versuch == 4:
+                raise
+        time.sleep(2 ** versuch)
     start = int(datetime(tag.year, tag.month, tag.day, tzinfo=timezone.utc).timestamp())
     roh_kerzen = kerzen_aus_bi5(roh, start)
     faktor = faktor_finden(roh_kerzen, bereich) if roh_kerzen else 1
@@ -121,14 +130,23 @@ def m15_laden(symbol, tage=730, ordner=None, fortschritt=None):
     ergebnis = [None] * len(handelstage)
     erledigt = [0]
 
+    fehlgeschlagen = []
+
     def laden(i):
-        ergebnis[i] = _tag_laden(dukas_symbol, handelstage[i], bereich, ordner)
+        try:
+            ergebnis[i] = _tag_laden(dukas_symbol, handelstage[i], bereich, ordner)
+        except Exception:
+            ergebnis[i] = []
+            fehlgeschlagen.append(handelstage[i])
         erledigt[0] += 1
         if fortschritt:
             fortschritt(erledigt[0], len(handelstage))
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:   # höflich: wenige gleichzeitige Anfragen
         list(pool.map(laden, range(len(handelstage))))
+    if len(fehlgeschlagen) > len(handelstage) * 0.05:
+        raise ValueError(f"Dukascopy: {len(fehlgeschlagen)} von {len(handelstage)} Tagen nicht ladbar – "
+                         "später nochmal versuchen (schon geladene Tage bleiben gespeichert).")
     kerzen = [k for tag in ergebnis for k in tag]
     if not kerzen:
         raise ValueError(f"Dukascopy hat keine Daten für {symbol} geliefert.")
