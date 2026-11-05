@@ -7,6 +7,10 @@ from pathlib import Path
 JARVIS_ORDNER = Path(__file__).resolve().parent
 PROJEKT_ORDNER = JARVIS_ORDNER.parent
 
+# ---------- Persönlichkeit ----------
+# So spricht Jarvis dich an (z. B. "Boss", "Chef", "Yusuf"). Leer lassen = keine feste Anrede.
+ANREDE = "Boss"
+
 # ---------- KI-Gehirn (Claude) ----------
 # Der API-Schlüssel steht NICHT hier, sondern in der Datei jarvis/.env (siehe README).
 MODELL = "claude-opus-5-5"

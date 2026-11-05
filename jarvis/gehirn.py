@@ -38,6 +38,10 @@ Werkzeuge:
 - Wenn du dir bei einer Aktion wirklich unsicher bist, frag kurz nach, statt zu raten.
 """
 
+if einstellungen.ANREDE:
+    SYSTEM_ANWEISUNG += (f"\nAnrede: Sprich den Nutzer immer mit „{einstellungen.ANREDE}“ an "
+                         f"(z. B. „Erledigt, {einstellungen.ANREDE}.“), aber nicht in jedem Satz.\n")
+
 
 class Gehirn:
     def __init__(self, werkzeugkasten, client=None, beobachter=None):
