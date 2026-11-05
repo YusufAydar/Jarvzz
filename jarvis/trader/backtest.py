@@ -16,7 +16,7 @@ und Monte-Carlo (Trades 1000-mal neu gemischt -> realistischer schlimmster Drawd
 import bisect
 import random
 
-from trader import paper, risiko, strategie
+from trader import paper, risiko, strategie, strategien  # noqa: F401
 
 
 def h1_aus_m15(kerzen):
@@ -36,8 +36,9 @@ def stellen_schaetzen(preis):
     return 2 if preis >= 100 else 3 if preis >= 10 else 5
 
 
-def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300):
-    """kerzen: M15-Kerzen (ältester zuerst). Gibt ein dict mit Trades, Statistik und Auswertungen zurück."""
+def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300, strategie_name="pullback"):
+    """kerzen: M15-Kerzen (ältester zuerst). Gibt ein dict mit Trades, Statistik und Auswertungen zurück.
+    strategie_name: eine aus trader.strategien.STRATEGIEN (Standard: Trend-Pullback)."""
     if len(kerzen) < fenster + 50:
         raise ValueError(f"Zu wenig Kursdaten für einen Backtest ({len(kerzen)} Kerzen).")
     h1 = [dict(k, ende=k["zeit"] + 3600) for k in kerzen_h1] if kerzen_h1 else h1_aus_m15(kerzen)
@@ -62,8 +63,8 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300)
         h1_bis = bisect.bisect_right(h1_enden, ende)
         if h1_bis < 60:
             continue
-        signal = strategie.bewerten(kerzen[i - fenster + 1:i + 1], h1[max(0, h1_bis - 250):h1_bis],
-                                    symbol, stellen, kosten)
+        signal = strategien.bewerten(strategie_name, kerzen[i - fenster + 1:i + 1],
+                                     h1[max(0, h1_bis - 250):h1_bis], symbol, stellen, kosten)
         if signal["aktion"] == "WAIT":
             grund = (signal["gruende"] or ["?"])[0].split(" – ")[0].split(",")[0]
             warte_gruende[grund] = warte_gruende.get(grund, 0) + 1
@@ -91,7 +92,7 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300)
     letzte = kerzen[-1]
     konto.alle_schliessen({symbol: letzte["close"]}, letzte["zeit"] + 900, "Ende des Backtests")
     trades = konto.zustand["trades"]
-    return {"symbol": symbol, "von": kerzen[fenster]["zeit"], "bis": letzte["zeit"], "kerzen": len(kerzen),
+    return {"symbol": symbol, "strategie": strategien.NAMEN[strategie_name], "von": kerzen[fenster]["zeit"], "bis": letzte["zeit"], "kerzen": len(kerzen),
             "start": start, "ende_balance": konto.zustand["balance"], "signale": signale, "trades": trades,
             "statistik": paper.statistik(trades, start), "kalibrierung": kalibrierung(trades),
             "stabilitaet": stabilitaet(trades, start), "monte_carlo": monte_carlo(trades, start),
@@ -179,7 +180,7 @@ def text(ergebnis, regeln):
     f = lambda x, n=2: "–" if x is None else ("∞" if x == float("inf") else f"{x:.{n}f}")
     status, warum = urteil(ergebnis, regeln)
     zeilen = [
-        f"BACKTEST {ergebnis['symbol']} (M15), {datetime.fromtimestamp(ergebnis['von']):%d.%m.%Y} bis "
+        f"BACKTEST {ergebnis['symbol']} – {ergebnis.get('strategie', 'Trend-Pullback')} (M15), {datetime.fromtimestamp(ergebnis['von']):%d.%m.%Y} bis "
         f"{datetime.fromtimestamp(ergebnis['bis']):%d.%m.%Y}, {ergebnis['kerzen']} Kerzen",
         f"Urteil: {status} – {warum}",
         f"Trades {s['trades']} (Signale {ergebnis['signale']}), Win-Rate {f((s['win_rate'] or 0) * 100, 0)} %, "
@@ -206,4 +207,32 @@ def text(ergebnis, regeln):
         zeilen.append("Häufigste Gründe fürs Warten: " + ", ".join(
             f"{k} ({v}x)" for k, v in sorted(ergebnis["warte_gruende"].items(), key=lambda x: -x[1])[:3]))
     zeilen.append("Hinweis: Vergangene Ergebnisse garantieren nichts. Ohne News-Sperre getestet.")
+    return "\n".join(zeilen)
+
+
+def vergleich(symbol, kerzen, regeln, start=10000.0, namen=None, fenster=300):
+    """Testet mehrere Strategien auf GENAU denselben Kursdaten. Gibt die Ergebnisse sortiert zurück (beste zuerst)."""
+    ergebnisse = [backtest(symbol, kerzen, regeln, start, fenster=fenster, strategie_name=n)
+                  for n in (namen or strategien.STRATEGIEN)]
+
+    def rang(e):
+        s = e["statistik"]
+        status = urteil(e, regeln)[0]
+        # Erst bestandene, dann nach Ø R je Trade (nur mit genug Trades zählt das wirklich)
+        return (status == "BESTANDEN", s["trades"] >= 30, s["schnitt_r"] or -99)
+    return sorted(ergebnisse, key=rang, reverse=True)
+
+
+def vergleich_text(ergebnisse, regeln):
+    """Kurze Tabelle für den Vergleich mehrerer Strategien auf einem Markt."""
+    f = lambda x, n=2: "–" if x is None else ("∞" if x == float("inf") else f"{x:.{n}f}")
+    zeilen = [f"STRATEGIE-VERGLEICH {ergebnisse[0]['symbol']}:"]
+    for e in ergebnisse:
+        s = e["statistik"]
+        status = urteil(e, regeln)[0]
+        st = e["stabilitaet"]
+        zeilen.append(f"  {e['strategie']:<18} {s['trades']:>4} Trades, Win {f((s['win_rate'] or 0) * 100, 0):>3} %, "
+                      f"PF {f(s['profit_faktor']):>5}, Ø {f(s['schnitt_r']):>5} R, Netto {s['netto']:+9.2f} $, "
+                      f"DD {s['max_drawdown_prozent']:4.1f} %, spätes Drittel PF "
+                      f"{f(st['spaet']['profit_faktor']) if st else '–'} -> {status}")
     return "\n".join(zeilen)

@@ -187,3 +187,17 @@ def zusammenfassung(symbol, zeitrahmen, a, stellen=5):
     if a["pivots"]:
         zeilen.append("Tages-Pivots: " + ", ".join(f"{k} {f(v)}" for k, v in a["pivots"].items()))
     return "\n".join(zeilen)
+
+
+def bollinger(schluss, n=20, faktor=2.0):
+    """Bollinger-Bänder: (mitte, oben, unten) – Mitte = gleitender Durchschnitt, Bänder = ± faktor * Standardabweichung."""
+    mitte, oben, unten = [], [], []
+    for i in range(len(schluss)):
+        if i + 1 < n:
+            mitte.append(None), oben.append(None), unten.append(None)
+            continue
+        fenster = schluss[i + 1 - n:i + 1]
+        m = sum(fenster) / n
+        abw = (sum((x - m) ** 2 for x in fenster) / n) ** 0.5
+        mitte.append(m), oben.append(m + faktor * abw), unten.append(m - faktor * abw)
+    return mitte, oben, unten

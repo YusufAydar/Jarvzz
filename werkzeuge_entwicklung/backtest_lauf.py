@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "jarvis"))
 
 import einstellungen  # noqa: E402
-from trader import backtest, risiko  # noqa: E402
+from trader import backtest, risiko, strategien  # noqa: E402
 from trading import historie  # noqa: E402
 
 TAGE = int(sys.argv[1]) if len(sys.argv) > 1 else 730
@@ -25,8 +25,11 @@ for markt in einstellungen.TRADER_MAERKTE:
 
     try:
         kerzen = historie.m15_laden(markt, TAGE, fortschritt=fortschritt)
-        ergebnis = backtest.backtest(markt, kerzen, regeln, einstellungen.TRADER_KONTO_START)
-        text = backtest.text(ergebnis, regeln)
+        print(f"  {markt}: {len(kerzen)} Kerzen, teste {len(strategien.STRATEGIEN)} Strategien ...", flush=True)
+        ergebnisse = backtest.vergleich(markt, kerzen, regeln, einstellungen.TRADER_KONTO_START)
+        # Zuerst die Vergleichstabelle, dann die Details jeder Strategie
+        text = backtest.vergleich_text(ergebnisse, regeln) + "\n\n" + "\n\n".join(
+            backtest.text(e, regeln) for e in ergebnisse)
     except Exception as fehler:
         text = f"{markt}: FEHLER {fehler}"
     print(text, flush=True)

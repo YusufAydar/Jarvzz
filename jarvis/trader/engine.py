@@ -19,7 +19,7 @@ from collections import deque
 from datetime import datetime
 from pathlib import Path
 
-from trader import bericht, paper, risiko, strategie
+from trader import bericht, paper, risiko, strategien
 
 DATEN_ALTER_MAX = 2 * 15 * 60 + 300  # M15: älter als ~35 Minuten = veraltet
 
@@ -166,7 +166,8 @@ class TradingEngine:
             return
 
         kosten = self.regeln.kosten.get(symbol.upper(), 0.0)
-        signal = strategie.bewerten(abgeschlossen[-300:], h1[:-1][-250:], symbol, stellen, kosten)
+        name_strategie = getattr(self.e, "TRADER_STRATEGIE", {}).get(symbol.upper(), "pullback")
+        signal = strategien.bewerten(name_strategie, abgeschlossen[-300:], h1[:-1][-250:], symbol, stellen, kosten)
         if signal["aktion"] == "WAIT":
             self._protokoll(symbol, "WAIT", signal["gruende"], preis=preis)
             return

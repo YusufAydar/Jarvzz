@@ -83,8 +83,10 @@ def pruefen(signal, symbol, zeitstempel, konto, regeln, news=None):
             gruende.append("ähnlicher Markt schon in dieselbe Richtung offen (Korrelation)")
     if signal["confidence"] < regeln.min_confidence:
         gruende.append(f"Confidence {signal['confidence']} unter {regeln.min_confidence}")
-    if signal["setup"]["crv_netto"] < regeln.min_crv:
-        gruende.append(f"CRV nach Kosten {signal['setup']['crv_netto']:.2f} unter {regeln.min_crv}")
+    # Eine Strategie darf eine eigene CRV-Grenze haben, aber nie unter 1,0
+    min_crv = max(1.0, signal["setup"].get("min_crv", regeln.min_crv))
+    if signal["setup"]["crv_netto"] < min_crv:
+        gruende.append(f"CRV nach Kosten {signal['setup']['crv_netto']:.2f} unter {min_crv}")
     for n in news or []:
         if n.get("waehrung") in NEWS_WAEHRUNGEN.get(symbol, {"USD"}) and \
                 abs(n["zeit"] - zeitstempel) <= regeln.news_sperre_minuten * 60:

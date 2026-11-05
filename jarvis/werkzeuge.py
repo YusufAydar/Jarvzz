@@ -254,11 +254,18 @@ WERKZEUG_BESCHREIBUNGEN = [
         "description": "Testet die Trading-Strategie des Roboters auf historischen Kursen (M15, standardmäßig 2 Jahre "
                        "von Dukascopy; beim ersten Mal dauert der Download einige Minuten) mit Kosten, Risiko-Engine, "
                        "Kalibrierung des Confidence-Scores, Quartals-, Stabilitäts- und Monte-Carlo-Prüfung. "
-                       "Liefert ein Urteil (bestanden / nicht bestanden / zu wenig Daten).",
+                       "Liefert ein Urteil (bestanden / nicht bestanden / zu wenig Daten). Mit strategie='alle' "
+                       "werden alle Strategien (Trend-Pullback, London-Breakout, New-York-Breakout, Mean-Reversion) "
+                       "auf denselben Daten verglichen.",
         "input_schema": {
             "type": "object",
             "properties": {"symbol": {"type": "string", "description": "z. B. 'XAUUSD'; leer = alle Roboter-Märkte"},
-                           "tage": {"type": "integer", "description": "Zeitraum in Tagen, Standard 730"}},
+                           "tage": {"type": "integer", "description": "Zeitraum in Tagen, Standard 730"},
+                           "strategie": {"type": "string",
+                                         "enum": ["eingestellt", "alle", "pullback", "orb_london", "orb_newyork",
+                                                  "mean_reversion"],
+                                         "description": "Standard 'eingestellt' = die Strategie, mit der der Roboter "
+                                                        "gerade handelt; 'alle' = Vergleich"}},
         },
     },
     {
@@ -631,7 +638,7 @@ class Werkzeugkasten:
             return "Nicht freigegeben."
         return self.trader.steuern(aktion)
 
-    def _backtest_starten(self, symbol=None, tage=730):
+    def _backtest_starten(self, symbol=None, tage=730, strategie="eingestellt"):
         from trader import backtest, risiko
         from trading import historie, marktdaten
         regeln = risiko.Regeln(einstellungen)
@@ -647,7 +654,14 @@ class Werkzeugkasten:
                         h1 = marktdaten.kerzen_holen(markt, "H1", 5000)[3]
                     except Exception:
                         h1 = None
-                ergebnis = backtest.backtest(markt.upper(), kerzen, regeln, einstellungen.TRADER_KONTO_START, h1)
+                if strategie == "alle":
+                    ergebnisse = backtest.vergleich(markt.upper(), kerzen, regeln, einstellungen.TRADER_KONTO_START)
+                    texte.append(f"[Daten: {quelle}]\n" + backtest.vergleich_text(ergebnisse, regeln))
+                    continue
+                name = (getattr(einstellungen, "TRADER_STRATEGIE", {}).get(markt.upper(), "pullback")
+                        if strategie in (None, "", "eingestellt") else strategie)
+                ergebnis = backtest.backtest(markt.upper(), kerzen, regeln, einstellungen.TRADER_KONTO_START, h1,
+                                             strategie_name=name)
                 texte.append(f"[Daten: {quelle}]\n" + backtest.text(ergebnis, regeln))
             except Exception as fehler:
                 texte.append(f"{markt}: Backtest nicht möglich ({fehler})")

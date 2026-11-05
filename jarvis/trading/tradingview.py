@@ -82,7 +82,8 @@ def zusammenfassung(name, e):
                   f"heute {f(t['change'])} % | Monats-Pivots S1 {f(t['Pivot.M.Classic.S1'], 4)}, "
                   f"P {f(t['Pivot.M.Classic.Middle'], 4)}, R1 {f(t['Pivot.M.Classic.R1'], 4)}")
     stimmen = [bewertung(w["Recommend.All"]) for w in e["zeitrahmen"].values()]
-    if all("KAUFEN" in s for s in stimmen):
+    # Achtung: "VERKAUFEN" enthält das Wort "KAUFEN" – deshalb zuerst auf VERKAUFEN prüfen
+    if all("VERKAUFEN" not in s and "KAUFEN" in s for s in stimmen):
         zeilen.append("Alle Zeitrahmen zeigen KAUFEN – klare Richtung nach oben.")
     elif all("VERKAUFEN" in s for s in stimmen):
         zeilen.append("Alle Zeitrahmen zeigen VERKAUFEN – klare Richtung nach unten.")

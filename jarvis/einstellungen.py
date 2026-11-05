@@ -93,6 +93,9 @@ TRADER_MAX_POSITIONEN = 2
 TRADER_VERLUSTSERIE_PAUSE = 3       # nach so vielen Verlusten in Folge: Pause bis morgen
 TRADER_MIN_CONFIDENCE = 60          # nur Signale ab diesem Score (0–100)
 TRADER_MIN_CRV = 1.5                # Chance/Risiko NACH Kosten
+# Welche Strategie je Markt? Möglich: pullback, orb_london, orb_newyork, mean_reversion
+# Erst umstellen, wenn der 2-Jahres-Vergleich (Workflow "Roboter-Backtest") eine Strategie als BESTANDEN zeigt.
+TRADER_STRATEGIE = {"XAUUSD": "pullback", "US100": "pullback", "EURUSD": "pullback"}
 TRADER_HANDELSZEIT = ("09:00", "21:00")   # österreichische Zeit, Montag bis Freitag
 TRADER_SCHLIESSEN_UM = "20:55"      # Daytrading: offene Positionen vor Handelsschluss schließen
 TRADER_NEWS_SPERRE_MINUTEN = 30     # keine neuen Trades so viele Minuten vor/nach wichtigen News

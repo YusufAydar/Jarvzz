@@ -144,7 +144,9 @@ def m15_laden(symbol, tage=730, ordner=None, fortschritt=None):
 
     with ThreadPoolExecutor(max_workers=3) as pool:   # höflich: wenige gleichzeitige Anfragen
         list(pool.map(laden, range(len(handelstage))))
-    if len(fehlgeschlagen) > len(handelstage) * 0.05:
+    # Die letzten 2 Tage stellt Dukascopy manchmal erst später bereit – die zählen nicht als Fehler
+    echte_fehler = [t for t in fehlgeschlagen if t < heute - timedelta(days=2)]
+    if len(echte_fehler) > max(1, len(handelstage) * 0.05):
         raise ValueError(f"Dukascopy: {len(fehlgeschlagen)} von {len(handelstage)} Tagen nicht ladbar – "
                          "später nochmal versuchen (schon geladene Tage bleiben gespeichert).")
     kerzen = [k for tag in ergebnis for k in tag]

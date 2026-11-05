@@ -69,6 +69,13 @@ class TestTradingView(unittest.TestCase):
         self.assertIn("Alle Zeitrahmen zeigen KAUFEN", text)
         self.assertIsNone(tradingview.auswerten({"data": []}, tfs))
 
+    def test_verkaufen_ist_nicht_kaufen(self):
+        # Fehler aus dem Live-Check: "VERKAUFEN" enthält "KAUFEN" -> wurde als "Richtung nach oben" gemeldet
+        antwort, tfs = self.antwort(-0.7)
+        text = tradingview.zusammenfassung("US30", tradingview.auswerten(antwort, tfs))
+        self.assertIn("Alle Zeitrahmen zeigen VERKAUFEN", text)
+        self.assertNotIn("nach oben", text)
+
     def test_tageswerte_ohne_suffix(self):
         spalten = tradingview.spalten_fuer(("D1",))
         self.assertIn("Recommend.All", spalten)

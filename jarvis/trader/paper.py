@@ -74,7 +74,7 @@ class PaperKonto:
                  "einstieg": preis if preis is not None else s["einstieg"], "stop": s["stop"], "ziel": s["ziel"],
                  "einheiten": einheiten, "kosten": s.get("kosten", 0.0), "eroeffnet": zeitstempel,
                  "confidence": signal["confidence"], "teile": signal.get("teile", {}),
-                 "begruendung": signal.get("gruende", []), "strategie": "Trend-Pullback",
+                 "begruendung": signal.get("gruende", []), "strategie": signal.get("strategie", "Trend-Pullback"),
                  "risiko_betrag": (abs((preis or s["einstieg"]) - s["stop"]) + s.get("kosten", 0.0)) * einheiten}
             self.zustand["naechste_id"] += 1
             self.zustand["offene"].append(p)
