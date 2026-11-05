@@ -4,6 +4,11 @@ Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub:
 Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
 die neuesten Einträge (sie stehen in seiner Grundanweisung).
 
+## 2026-11-06 · Backtest über 2 Jahre mit Dukascopy-Kursen
+backtest_starten lädt jetzt standardmäßig 2 Jahre 15-Minuten-Kerzen von Dukascopy (kostenlos, wird in
+daten/historie/ gespeichert, erster Download dauert einige Minuten) und zeigt zusätzlich das Ergebnis je Quartal.
+Parameter tage für andere Zeiträume. Fällt Dukascopy aus, wird wie bisher Yahoo/MT5 benutzt.
+
 ## 2026-11-06 · Trading-Roboter (Paper-Trading), rotes Farbschema, Unterbrechen beim Sprechen
 Neuer Trading-Roboter (Ordner trader/), läuft in der Zentrale mit: beobachtet XAUUSD, US100 und EURUSD jede Minute,
 entscheidet bei jeder abgeschlossenen 15-Minuten-Kerze BUY/SELL/HOLD/WAIT mit Begründung und Confidence-Score

@@ -73,9 +73,9 @@ def roboter_backtest():
     regeln = risiko.Regeln(einstellungen)
     texte = []
     for markt in einstellungen.TRADER_MAERKTE:
-        _, _, quelle, kerzen = marktdaten.kerzen_holen(markt, "M15", 20000)
-        h1 = marktdaten.kerzen_holen(markt, "H1", 5000)[3]
-        texte.append(f"[{quelle}] " + backtest.text(backtest.backtest(markt, kerzen, regeln, 10000, h1), regeln))
+        from trading import historie
+        kerzen = historie.m15_laden(markt, 730)
+        texte.append("[Dukascopy, 2 Jahre] " + backtest.text(backtest.backtest(markt, kerzen, regeln, 10000), regeln))
     return "\n\n" + "\n\n".join(texte)
 
 

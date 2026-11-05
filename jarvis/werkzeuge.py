@@ -251,12 +251,14 @@ WERKZEUG_BESCHREIBUNGEN = [
     },
     {
         "name": "backtest_starten",
-        "description": "Testet die Trading-Strategie des Roboters auf historischen Kursen (M15, so weit die Daten "
-                       "reichen) mit Kosten, Risiko-Engine, Kalibrierung des Confidence-Scores, Stabilitäts- und "
-                       "Monte-Carlo-Prüfung. Liefert ein Urteil (bestanden / nicht bestanden / zu wenig Daten).",
+        "description": "Testet die Trading-Strategie des Roboters auf historischen Kursen (M15, standardmäßig 2 Jahre "
+                       "von Dukascopy; beim ersten Mal dauert der Download einige Minuten) mit Kosten, Risiko-Engine, "
+                       "Kalibrierung des Confidence-Scores, Quartals-, Stabilitäts- und Monte-Carlo-Prüfung. "
+                       "Liefert ein Urteil (bestanden / nicht bestanden / zu wenig Daten).",
         "input_schema": {
             "type": "object",
-            "properties": {"symbol": {"type": "string", "description": "z. B. 'XAUUSD'; leer = alle Roboter-Märkte"}},
+            "properties": {"symbol": {"type": "string", "description": "z. B. 'XAUUSD'; leer = alle Roboter-Märkte"},
+                           "tage": {"type": "integer", "description": "Zeitraum in Tagen, Standard 730"}},
         },
     },
     {
@@ -629,18 +631,22 @@ class Werkzeugkasten:
             return "Nicht freigegeben."
         return self.trader.steuern(aktion)
 
-    def _backtest_starten(self, symbol=None):
+    def _backtest_starten(self, symbol=None, tage=730):
         from trader import backtest, risiko
-        from trading import marktdaten
+        from trading import historie, marktdaten
         regeln = risiko.Regeln(einstellungen)
         texte = []
         for markt in ([symbol] if symbol else einstellungen.TRADER_MAERKTE):
             try:
-                _, _, quelle, kerzen = marktdaten.kerzen_holen(markt, "M15", 20000)
-                try:
-                    h1 = marktdaten.kerzen_holen(markt, "H1", 5000)[3]
-                except Exception:
-                    h1 = None
+                try:  # lange Geschichte von Dukascopy (H1 wird aus den M15-Kerzen gebaut)
+                    kerzen, h1, quelle = historie.m15_laden(markt, int(tage or 730)), None, f"Dukascopy, {tage} Tage"
+                except Exception as fehler:
+                    _, _, quelle, kerzen = marktdaten.kerzen_holen(markt, "M15", 20000)
+                    quelle += f" (Dukascopy nicht erreichbar: {str(fehler)[:60]})"
+                    try:
+                        h1 = marktdaten.kerzen_holen(markt, "H1", 5000)[3]
+                    except Exception:
+                        h1 = None
                 ergebnis = backtest.backtest(markt.upper(), kerzen, regeln, einstellungen.TRADER_KONTO_START, h1)
                 texte.append(f"[Daten: {quelle}]\n" + backtest.text(ergebnis, regeln))
             except Exception as fehler:

@@ -95,7 +95,22 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300)
             "start": start, "ende_balance": konto.zustand["balance"], "signale": signale, "trades": trades,
             "statistik": paper.statistik(trades, start), "kalibrierung": kalibrierung(trades),
             "stabilitaet": stabilitaet(trades, start), "monte_carlo": monte_carlo(trades, start),
+            "quartale": quartale(trades),
             "abgelehnt": abgelehnt, "warte_gruende": warte_gruende}
+
+
+def quartale(trades):
+    """Ergebnis je Quartal – zeigt, ob die Strategie über die Zeit gleichmäßig funktioniert."""
+    from datetime import datetime
+    q = {}
+    for t in trades:
+        d = datetime.fromtimestamp(t["geschlossen"])
+        name = f"{d.year}-Q{(d.month - 1) // 3 + 1}"
+        x = q.setdefault(name, {"trades": 0, "summe_r": 0.0, "netto": 0.0})
+        x["trades"] += 1
+        x["summe_r"] += t.get("r") or 0
+        x["netto"] += t["ergebnis"]
+    return dict(sorted(q.items()))
 
 
 def kalibrierung(trades):
@@ -178,6 +193,9 @@ def text(ergebnis, regeln):
     st = ergebnis["stabilitaet"]
     if st:
         zeilen.append(f"Stabilität: erste 2/3 PF {f(st['frueh']['profit_faktor'])}, letztes 1/3 PF {f(st['spaet']['profit_faktor'])}")
+    if ergebnis.get("quartale") and len(ergebnis["quartale"]) > 1:
+        zeilen.append("Je Quartal: " + "; ".join(f"{k} {v['trades']} Trades {v['summe_r']:+.1f} R"
+                                                  for k, v in ergebnis["quartale"].items()))
     mc = ergebnis["monte_carlo"]
     if mc:
         zeilen.append(f"Monte-Carlo: typischer Drawdown {mc['median_drawdown']:.1f} %, schlechter Fall (95 %) {mc['drawdown_95']:.1f} %")
