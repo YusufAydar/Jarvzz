@@ -67,18 +67,13 @@ pruefe("Setup-Scanner", scanner)
 pruefe("Wirtschaftskalender", news)
 
 
-def roboter_backtest():
-    import einstellungen
-    from trader import backtest, risiko
-    regeln = risiko.Regeln(einstellungen)
-    texte = []
-    for markt in einstellungen.TRADER_MAERKTE:
-        from trading import historie
-        kerzen = historie.m15_laden(markt, 730)
-        texte.append("[Dukascopy, 2 Jahre] " + backtest.text(backtest.backtest(markt, kerzen, regeln, 10000), regeln))
-    return "\n\n" + "\n\n".join(texte)
+def dukascopy():
+    from trading import historie
+    kerzen = historie.m15_laden("EURUSD", 7)
+    assert len(kerzen) > 100, f"nur {len(kerzen)} Kerzen"
+    return f"EURUSD: {len(kerzen)} M15-Kerzen aus 7 Tagen, letzter Kurs {kerzen[-1]['close']:.5f}"
 
 
-pruefe("Roboter-Backtest (echte Kurse)", roboter_backtest)
+pruefe("Dukascopy-Historie", dukascopy)
 print(f"\n{fehler} Fehler")
 sys.exit(1 if fehler else 0)

@@ -14,3 +14,4 @@ jarvis/meine_einstellungen.py
 jarvis/plugins/*.py
 jarvis/sicherungen/
 *.neu
+backtest_ergebnis.md

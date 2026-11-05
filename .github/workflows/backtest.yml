@@ -1,0 +1,49 @@
+# Großer Backtest des Trading-Roboters mit 2 Jahren Dukascopy-Kursen.
+# Läuft bei Änderungen an der Strategie und per Knopfdruck (Reiter "Actions").
+name: Roboter-Backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      tage:
+        description: "Zeitraum in Tagen"
+        default: "730"
+  push:
+    paths:
+      - "jarvis/trader/**"
+      - "jarvis/trading/setups.py"
+      - "jarvis/trading/indikatoren.py"
+      - "jarvis/trading/historie.py"
+      - ".github/workflows/backtest.yml"
+      - "werkzeuge_entwicklung/backtest_lauf.py"
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Heruntergeladene Kurse aufheben, damit der nächste Lauf schnell ist
+      - name: Kurs-Historie aus dem Zwischenspeicher
+        uses: actions/cache@v4
+        with:
+          path: jarvis/daten/historie
+          key: historie-${{ github.run_id }}
+          restore-keys: historie-
+
+      - name: Backtest rechnen
+        run: python werkzeuge_entwicklung/backtest_lauf.py "${{ github.event.inputs.tage || '730' }}"
+
+      - name: Ergebnis anzeigen
+        run: cat backtest_ergebnis.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ergebnis zum Download anhängen
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-ergebnis
+          path: backtest_ergebnis.md
