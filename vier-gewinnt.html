@@ -1,0 +1,107 @@
+<title>Vier gewinnt</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&display=swap">
+<style>
+/* Layout: eine Spalte, Brett im Zentrum, Status darüber, Steuerung darunter */
+:root{
+  --bg:#eef1ee; --fg:#1d2a26; --muted:#5d6d67;
+  --brett:#24564b; --loch:#e3e9e5; --a:#e0573f; --b:#e9b949; --rand:#18413a;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121a18; --fg:#e7eeea; --muted:#94a59f; --brett:#2b6a5c; --loch:#0d1412; --rand:#3b8574; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121a18; --fg:#e7eeea; --muted:#94a59f; --brett:#2b6a5c; --loch:#0d1412; --rand:#3b8574; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,7vw,44px);margin:0;letter-spacing:-.02em}
+#status{font-family:var(--display);font-weight:500;font-size:18px;min-height:1.4em;display:flex;align-items:center;gap:10px}
+.punkt{width:16px;height:16px;border-radius:50%;display:inline-block}
+.a{background:var(--a)} .b{background:var(--b)}
+#brett{display:grid;grid-template-columns:repeat(7,1fr);gap:clamp(4px,1.5vw,10px);padding:clamp(8px,2.5vw,16px);
+  background:var(--brett);border-radius:18px;border-bottom:8px solid var(--rand);width:100%;max-width:100%;box-sizing:border-box;touch-action:manipulation}
+.feld{aspect-ratio:1;border-radius:50%;background:var(--loch);border:0;padding:0;cursor:pointer;position:relative;overflow:hidden}
+.feld:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+.feld.a,.feld.b{animation:fall .35s cubic-bezier(.3,1.4,.6,1)}
+.feld.a{background:var(--a)} .feld.b{background:var(--b)}
+.feld.sieg{box-shadow:0 0 0 4px var(--fg) inset}
+.vorschau{box-shadow:0 0 0 3px color-mix(in srgb,var(--fg) 35%,transparent) inset}
+@keyframes fall{from{transform:translateY(-300%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.feld{animation:none!important}}
+.leiste{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+button.knopf{font:inherit;font-weight:600;padding:10px 16px;border-radius:999px;border:2px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer}
+button.knopf[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+#stand{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+</style>
+
+<main>
+  <h1>Vier gewinnt</h1>
+  <div id="status" aria-live="polite"></div>
+  <div id="brett" role="grid" aria-label="Spielbrett, 7 Spalten"></div>
+  <div class="leiste">
+    <button class="knopf" id="modus-zwei" aria-pressed="true">2 Spieler</button>
+    <button class="knopf" id="modus-cpu" aria-pressed="false">Gegen Computer</button>
+    <button class="knopf" id="neu">Neues Spiel</button>
+  </div>
+  <div id="stand"></div>
+</main>
+
+<script>
+const R=6,S=7, brettEl=document.getElementById('brett'), statusEl=document.getElementById('status');
+let feld, dran, aus, gegenCpu=false, stand={a:0,b:0,u:0};
+const name={a:'Rot',b:'Gelb'};
+
+for(let r=0;r<R;r++)for(let s=0;s<S;s++){
+  const b=document.createElement('button'); b.className='feld'; b.dataset.s=s; b.id='f'+r+s;
+  b.setAttribute('aria-label','Spalte '+(s+1));
+  b.onclick=()=>zug(s,true);
+  b.onmouseenter=()=>vorschau(s); b.onmouseleave=()=>vorschau(-1);
+  brettEl.appendChild(b);
+}
+function el(r,s){return document.getElementById('f'+r+s)}
+function vorschau(s){document.querySelectorAll('.vorschau').forEach(e=>e.classList.remove('vorschau'));
+  if(s<0||aus)return; const r=freieZeile(feld,s); if(r>=0)el(r,s).classList.add('vorschau')}
+function freieZeile(f,s){for(let r=R-1;r>=0;r--)if(!f[r][s])return r;return -1}
+
+function neu(){feld=[...Array(R)].map(()=>Array(S).fill(null)); dran='a'; aus=false;
+  document.querySelectorAll('.feld').forEach(e=>e.className='feld'); zeige()}
+
+function zug(s,mensch){
+  if(aus||(mensch&&gegenCpu&&dran==='b'))return;
+  const r=freieZeile(feld,s); if(r<0)return;
+  feld[r][s]=dran; el(r,s).className='feld '+dran;
+  const linie=sieg(feld,r,s);
+  if(linie){aus=true; linie.forEach(([a,b])=>el(a,b).classList.add('sieg')); stand[dran]++; zeige(name[dran]+' gewinnt!');return}
+  if(feld[0].every(Boolean)){aus=true; stand.u++; zeige('Unentschieden.');return}
+  dran=dran==='a'?'b':'a'; zeige();
+  if(gegenCpu&&dran==='b')setTimeout(()=>zug(cpuZug(),false),450);
+}
+
+function sieg(f,r,s){const p=f[r][s];
+  for(const[dr,ds]of[[0,1],[1,0],[1,1],[1,-1]]){let l=[[r,s]];
+    for(const k of[1,-1]){let a=r+dr*k,b=s+ds*k;while(a>=0&&a<R&&b>=0&&b<S&&f[a][b]===p){l.push([a,b]);a+=dr*k;b+=ds*k}}
+    if(l.length>=4)return l}
+  return null}
+
+// Computer: gewinnen > blocken > nichts verschenken > Mitte bevorzugen
+function cpuZug(){const frei=[...Array(S).keys()].filter(s=>freieZeile(feld,s)>=0);
+  const probe=(s,p)=>{const f=feld.map(z=>z.slice()),r=freieZeile(f,s);f[r][s]=p;return{f,r}};
+  for(const p of['b','a'])for(const s of frei){const{f,r}=probe(s,p);if(sieg(f,r,s))return s}
+  const sicher=frei.filter(s=>{const{f,r}=probe(s,'b');if(r===0)return true;f[r-1][s]='a';return!sieg(f,r-1,s)});
+  const wahl=(sicher.length?sicher:frei).sort((x,y)=>Math.abs(3-x)-Math.abs(3-y)+(Math.random()-.5)*1.2);
+  return wahl[0]}
+
+function zeige(text){
+  statusEl.innerHTML=text?`<span class="punkt ${aus&&!text.startsWith('Un')?dran:''}"></span>${text}`
+    :`<span class="punkt ${dran}"></span>${name[dran]} ist dran${gegenCpu&&dran==='b'?' (Computer denkt …)':''}`;
+  document.getElementById('stand').textContent=`Rot ${stand.a} · Gelb ${stand.b} · Unentschieden ${stand.u}`}
+
+function modus(cpu){gegenCpu=cpu;
+  document.getElementById('modus-zwei').setAttribute('aria-pressed',!cpu);
+  document.getElementById('modus-cpu').setAttribute('aria-pressed',cpu); stand={a:0,b:0,u:0}; neu()}
+document.getElementById('modus-zwei').onclick=()=>modus(false);
+document.getElementById('modus-cpu').onclick=()=>modus(true);
+document.getElementById('neu').onclick=neu;
+document.addEventListener('keydown',e=>{const n=+e.key;if(n>=1&&n<=7)zug(n-1,true)});
+neu();
+</script>

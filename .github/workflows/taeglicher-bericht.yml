@@ -1,0 +1,63 @@
+# Läuft jeden Tag automatisch, lädt die Daten, erstellt den Bericht
+# und speichert ihn im Ordner "berichte" im Repository.
+name: Täglicher Bericht
+
+on:
+  schedule:
+    - cron: "17 6 * * *"     # jeden Tag um 06:17 UTC (= 07:17 Uhr Winterzeit in Deutschland)
+  workflow_dispatch:          # zusätzlich per Knopfdruck startbar (Reiter "Actions")
+    inputs:
+      anzahl:
+        description: "Wie viele Trader?"
+        default: "10"
+
+permissions:
+  contents: write             # nötig, damit der Bericht ins Repo gespeichert werden darf
+
+concurrency:
+  group: taeglicher-bericht
+  cancel-in-progress: false
+
+env:
+  # Anzahl Trader beim automatischen Lauf. Wenn alles klappt: auf 100 erhöhen.
+  ANZAHL: ${{ github.event.inputs.anzahl || '10' }}
+
+jobs:
+  bericht:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Die Datenbank wird zwischen den Läufen im Cache aufgehoben (nicht im Repo,
+      # weil sie zu groß wird). So müssen nur neue Trades geladen werden.
+      - name: Datenbank vom letzten Lauf holen
+        uses: actions/cache@v4
+        with:
+          path: daten
+          key: datenbank-${{ github.run_id }}
+          restore-keys: datenbank-
+
+      - name: Tests ausführen
+        run: python -m unittest discover tests
+
+      - name: Daten laden und Bericht erstellen
+        run: python main.py --anzahl "$ANZAHL"
+
+      - name: Bericht im Repository speichern
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add berichte
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen am Bericht."
+          else
+            git commit -m "Tagesbericht $(date -u +%Y-%m-%d)"
+            git push
+          fi
