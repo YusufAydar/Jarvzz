@@ -1,0 +1,106 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>JARVIS Trading Desk</title>
+<style>
+:root{--bg:#0d0505;--panel:#1c0b0d;--rand:#3a161b;--text:#f4d7da;--dim:#996b71;--akzent:#ff2a2a;--gruen:#00ff9d;--rot:#ff3b6b;--gold:#ffc94d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(circle at 50% -20%,#0d2340 0%,var(--bg) 60%);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden;font-size:14px}
+header{display:flex;align-items:center;gap:18px;padding:12px 22px;border-bottom:1px solid var(--rand);background:rgba(5,7,13,.7);backdrop-filter:blur(8px)}
+.logo{font-weight:800;letter-spacing:6px;font-size:20px;background:linear-gradient(90deg,var(--akzent),var(--gruen));-webkit-background-clip:text;color:transparent}
+.sub{color:var(--dim);font-size:11px;letter-spacing:3px}
+#ticker{flex:1;display:flex;gap:22px;overflow:hidden;white-space:nowrap;font-family:Consolas,monospace;font-size:13px}
+#uhr{font-family:Consolas,monospace;font-size:20px;color:var(--akzent)}
+.knopf{background:transparent;border:1px solid var(--akzent);color:var(--akzent);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:600;transition:.2s}
+.knopf:hover{background:var(--akzent);color:#000;box-shadow:0 0 18px var(--akzent)}
+.knopf.aus{border-color:var(--rot);color:var(--rot)}
+main{display:grid;grid-template-columns:1.1fr 1.3fr 1.1fr;gap:14px;padding:14px;height:calc(100vh - 62px)}
+.spalte{display:flex;flex-direction:column;gap:14px;min-height:0}
+.karte{background:linear-gradient(180deg,rgba(17,27,45,.9),rgba(9,14,24,.9));border:1px solid var(--rand);border-radius:14px;padding:14px;display:flex;flex-direction:column;min-height:0;box-shadow:0 0 30px rgba(0,229,255,.04)}
+.karte h2{font-size:11px;letter-spacing:3px;color:var(--dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.karte h2 b{color:var(--akzent)}
+.wachsen{flex:1}
+.scroll{overflow-y:auto;flex:1;min-height:0}
+.scroll::-webkit-scrollbar{width:5px}.scroll::-webkit-scrollbar-thumb{background:var(--rand);border-radius:3px}
+pre{white-space:pre-wrap;font-family:Consolas,monospace;font-size:12.5px;line-height:1.55;color:var(--text)}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.kpi{background:#070c15;border:1px solid var(--rand);border-radius:10px;padding:10px;text-align:center}
+.kpi span{display:block;font-size:10px;color:var(--dim);letter-spacing:2px}
+.kpi strong{font-size:18px;font-family:Consolas,monospace}
+.plus{color:var(--gruen)}.minus{color:var(--rot)}
+.symbole{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.sym{background:#070c15;border:1px solid var(--rand);color:var(--text);padding:6px 11px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600}
+.sym.aktiv,.sym:hover{border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(255,201,77,.3)}
+#orb{width:110px;height:110px;border-radius:50%;margin:6px auto 12px;background:radial-gradient(circle,#7ff6ff 0%,#00a8c7 35%,transparent 70%);box-shadow:0 0 60px var(--akzent);animation:puls 3s ease-in-out infinite}
+#orb.denkt{animation-duration:.8s;filter:hue-rotate(60deg)}#orb.spricht{animation-duration:1.2s;filter:hue-rotate(-40deg)}
+@keyframes puls{0%,100%{transform:scale(.92);opacity:.8}50%{transform:scale(1.05);opacity:1}}
+#modus{text-align:center;color:var(--dim);font-size:11px;letter-spacing:4px;margin-bottom:8px}
+.msg{margin:8px 0;padding:10px 12px;border-radius:10px;line-height:1.45;max-width:92%}
+.msg.jarvis{background:rgba(0,229,255,.07);border-left:3px solid var(--akzent)}
+.msg.nutzer{background:rgba(255,201,77,.07);border-right:3px solid var(--gold);margin-left:auto;text-align:right}
+.msg small{display:block;color:var(--dim);font-size:10px;margin-bottom:3px}
+form{display:flex;gap:8px;margin-top:10px}
+input{flex:1;background:#070c15;border:1px solid var(--rand);color:var(--text);padding:11px;border-radius:10px;outline:none;font-size:14px}
+input:focus{border-color:var(--akzent)}
+.zeile{padding:7px 0;border-bottom:1px solid var(--rand);font-size:12.5px}
+.zeile.long{color:var(--gruen)}.zeile.short{color:var(--rot)}
+#freigabe{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:9}
+#freigabe .karte{width:560px;max-height:80vh;border-color:var(--gold)}
+.leer{color:var(--dim);font-style:italic}
+</style></head><body>
+<header><div><div class="logo">JARVIS</div><div class="sub">TRADING DESK</div></div>
+<div id="ticker"><span class="leer">Lade Krypto-Kurse ...</span></div>
+<div id="uhr">--:--</div><button class="knopf" id="mikro">MIKRO AN</button></header>
+<main>
+<div class="spalte">
+ <div class="karte"><h2>FTMO KONTO <b id="kontoampel">&#9679;</b></h2><div class="kpis" id="kpis"></div><pre id="konto" class="scroll" style="max-height:170px;margin-top:10px">Lade ...</pre></div>
+ <div class="karte wachsen"><h2>MARKT&#220;BERBLICK <b>MT5</b></h2><pre id="ueberblick" class="scroll">Lade ...</pre></div>
+</div>
+<div class="spalte">
+ <div class="karte wachsen"><div id="orb"></div><div id="modus">BEREIT</div><div class="scroll" id="dialog"></div>
+ <form id="form"><input id="frage" placeholder="Frag Jarvis ... z. B. Wo gibt es gerade ein Setup?" autocomplete="off"><button class="knopf">SENDEN</button></form></div>
+</div>
+<div class="spalte">
+ <div class="karte wachsen"><h2>TECHNISCHE ANALYSE <b id="symname">EURUSD</b></h2>
+ <div class="symbole" id="symbole"></div><pre id="analyse" class="scroll">W&#228;hle einen Markt.</pre></div>
+ <div class="karte" style="max-height:32%"><h2>HYPERLIQUID PROFIS <b>24H</b></h2><div id="briefing" class="scroll"></div></div>
+ <div class="karte" style="max-height:20%"><h2>TERMINE &amp; MELDUNGEN</h2><div id="termine" class="scroll"></div></div>
+</div>
+</main>
+<div id="freigabe"><div class="karte"><h2>FREIGABE N&#214;TIG <b id="fgart"></b></h2><p id="fgtext" style="margin-bottom:8px"></p><pre id="fgdetails" class="scroll"></pre>
+<div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end"><button class="knopf aus" id="nein">ABLEHNEN</button><button class="knopf" id="ja">ERLAUBEN</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const SYMBOLE=['EURUSD','GBPUSD','Gold','US30','US100','DAX','BTCUSD'];
+let symbol='EURUSD',mikroAn=true,fgId=null,dialogLaenge=-1;
+const holen=u=>fetch(u,{cache:'no-store'}).then(r=>r.json());
+const senden=(u,d)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json','X-Jarvis':'1'},body:JSON.stringify(d)}).then(r=>r.json());
+const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+setInterval(()=>{$('uhr').textContent=new Date().toLocaleTimeString('de-DE')},1000);
+SYMBOLE.forEach(s=>{const b=document.createElement('button');b.className='sym'+(s===symbol?' aktiv':'');b.textContent=s;b.onclick=()=>{symbol=s;document.querySelectorAll('.sym').forEach(x=>x.classList.toggle('aktiv',x===b));ladeAnalyse()};$('symbole').appendChild(b)});
+async function ladeAnalyse(){$('symname').textContent=symbol;$('analyse').textContent='Analysiere '+symbol+' ...';
+ const d=await holen('/api/analyse?symbol='+encodeURIComponent(symbol)).catch(()=>({fehler:'nicht erreichbar'}));
+ if(d.symbol&&d.symbol!==symbol)return;$('analyse').textContent=d.fehler||d.text}
+async function ladeTrading(){const d=await holen('/api/trading').catch(()=>({fehler:'nicht erreichbar'}));
+ if(d.fehler){$('konto').textContent=$('ueberblick').textContent=d.fehler;return}
+ $('ueberblick').textContent=d.ueberblick;$('konto').textContent=d.konto;
+ const k=d.konto,zahl=re=>{const m=k.match(re);return m?m[1]:'--'};
+ const bal=zahl(/Balance[^\d-]*([-\d.,]+)/i),eq=zahl(/Equity[^\d-]*([-\d.,]+)/i),heute=zahl(/(?:Gewinn|heute)[^\d-]*([-\d.,]+)/i);
+ const cls=String(heute).startsWith('-')?'minus':'plus';
+ $('kpis').innerHTML=`<div class="kpi"><span>BALANCE</span><strong>${esc(bal)}</strong></div><div class="kpi"><span>EQUITY</span><strong>${esc(eq)}</strong></div><div class="kpi"><span>HEUTE</span><strong class="${cls}">${esc(heute)}</strong></div>`;
+ const amp=/rot/i.test(k)?'var(--rot)':/gelb/i.test(k)?'var(--gold)':'var(--gruen)';$('kontoampel').style.color=amp}
+async function ladeKrypto(){const d=await holen('/api/maerkte').catch(()=>({}));if(!d.kurse)return;
+ $('ticker').innerHTML=d.kurse.map(k=>`<span><b>${esc(k.coin)}</b> ${k.preis.toLocaleString('de-DE',{maximumFractionDigits:2})} <span class="${k.prozent>=0?'plus':'minus'}">${k.prozent>=0?'&#9650;':'&#9660;'} ${k.prozent.toFixed(2)}%</span></span>`).join('')}
+async function ladeBriefing(){const d=await holen('/api/briefing').catch(()=>({fehler:'nicht erreichbar'}));
+ $('briefing').innerHTML=d.fehler?`<div class="leer">${esc(d.fehler)}</div>`:(d.einig||[]).map(z=>`<div class="zeile ${/short|verkauf/i.test(z)?'short':'long'}">${esc(z)}</div>`).join('')||'<div class="leer">Keine Einigkeit heute.</div>'}
+async function ladeZustand(){const d=await holen('/api/zustand').catch(()=>null);if(!d)return;
+ const m=(d.modus||'bereit').toLowerCase();$('modus').textContent=m.toUpperCase();$('orb').className=/denk/.test(m)?'denkt':/sprech/.test(m)?'spricht':'';
+ mikroAn=d.mikro_an;$('mikro').textContent=mikroAn?'MIKRO AN':'MIKRO AUS';$('mikro').classList.toggle('aus',!mikroAn);
+ if(d.dialog.length!==dialogLaenge){dialogLaenge=d.dialog.length;$('dialog').innerHTML=d.dialog.map(x=>`<div class="msg ${x.wer==='jarvis'?'jarvis':'nutzer'}"><small>${esc(x.wer)} &middot; ${esc(x.zeit)}</small>${esc(x.text)}</div>`).join('');$('dialog').scrollTop=1e9}
+ const t=(d.termine||[]).map(e=>`<div class="zeile">&#128197; ${esc(e.zeit)} &ndash; ${esc(e.text)}</div>`);
+ const mm=(d.meldungen||[]).map(x=>`<div class="zeile" style="color:var(--gold);cursor:pointer" onclick="senden('/api/quittieren',{id:${x.id}})">&#9888; ${esc(x.titel)} ${esc(x.text)} <small>(klicken zum Quittieren)</small></div>`);
+ $('termine').innerHTML=mm.concat(t).join('')||'<div class="leer">Nichts geplant. Ein seltener Luxus.</div>';
+ const f=d.freigabe;if(f){fgId=f.id;$('fgart').textContent=f.art||'';$('fgtext').textContent=f.beschreibung||'';$('fgdetails').textContent=typeof f.details==='string'?f.details:JSON.stringify(f.details,null,2);$('freigabe').style.display='flex'}else{$('freigabe').style.display='none';fgId=null}}
+$('ja').onclick=()=>senden('/api/freigabe',{id:fgId,ja:true});$('nein').onclick=()=>senden('/api/freigabe',{id:fgId,ja:false});
+$('mikro').onclick=()=>senden('/api/mikro',{an:!mikroAn}).then(ladeZustand);
+$('form').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(t){senden('/api/frage',{text:t});$('frage').value=''}};
+ladeZustand();ladeTrading();ladeKrypto();ladeBriefing();ladeAnalyse();
+setInterval(ladeZustand,1000);setInterval(ladeKrypto,15000);setInterval(ladeTrading,60000);setInterval(ladeAnalyse,90000);setInterval(ladeBriefing,900000);
+</script></body></html>
