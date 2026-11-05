@@ -421,8 +421,11 @@ def baue_handler(kalender, werkzeugkasten):
                 self._antwort(self._mit_fehlertext(lambda: zwischengespeichert(
                     "ueberblick", 20, lambda: {"maerkte": marktdaten.ueberblick_daten()})))
             elif pfad == "/api/trading_einstellungen":
+                from trading import kursquellen
                 self._antwort({"maerkte": einstellungen.TRADING_MAERKTE,
-                               "zeitrahmen": einstellungen.TRADING_ZEITRAHMEN})
+                               "zeitrahmen": einstellungen.TRADING_ZEITRAHMEN,
+                               "tradingview": {m: kursquellen.tradingview_kuerzel(m) for m in einstellungen.TRADING_MAERKTE
+                                               if kursquellen.tradingview_kuerzel(m)}})
             elif pfad == "/api/zustand":
                 jetzt = datetime.now()
                 with zustand.sperre:

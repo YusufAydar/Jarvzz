@@ -72,6 +72,11 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(250px,300px) 
 .legende i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px}
 .quelle{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
+#tv-bereich{flex:1;min-height:300px;margin:6px 4px 4px;position:relative}
+#tv-bereich[hidden]{display:none}
+#tv-bereich .tradingview-widget-container,#tv-bereich .tradingview-widget-container__widget{height:100%;width:100%}
+.tv-modus #chart-bereich,.tv-modus #rsi-bereich,.tv-modus .legende,.tv-modus #t-ema,.tv-modus #t-zonen,.tv-modus #t-pivots,.tv-modus #t-pos{display:none}
+
 /* Analyse */
 .kacheln{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .kachel{border:1px solid var(--linie);padding:8px}
@@ -137,12 +142,14 @@ footer a{color:var(--dim)}
       <div class="chart-kopf">
         <span id="chart-symbol">–</span><span id="chart-preis" class="zahl">–</span><span class="quelle" id="chart-quelle"></span>
         <div class="chart-schalter">
+          <button class="chip" id="t-tv" aria-pressed="true" title="Echter TradingView-Chart">TRADINGVIEW</button>
           <button class="chip" id="t-ema" aria-pressed="true">EMA</button>
           <button class="chip" id="t-zonen" aria-pressed="true">ZONEN</button>
           <button class="chip" id="t-pivots" aria-pressed="true">PIVOTS</button>
           <button class="chip" id="t-pos" aria-pressed="true">POSITIONEN</button>
         </div>
       </div>
+      <div id="tv-bereich" hidden></div>
       <div id="chart-bereich"><div id="chart"></div><div id="chart-meldung">Lade Chart …</div></div>
       <div id="rsi-bereich"><span class="rsi-label">RSI 14</span><div id="rsi-chart"></div></div>
       <div class="legende">
@@ -180,7 +187,7 @@ footer a{color:var(--dim)}
 </main>
 <footer>
   <span>Nur Analyse – Jarvis platziert in dieser Version keine Orders. Keine Anlageberatung.</span>
-  <span>Charts: TradingView Lightweight Charts™ · Copyright (c) 2024 TradingView, Inc. · <a href="https://www.tradingview.com/" target="_blank" rel="noopener">tradingview.com</a></span>
+  <span>Charts: TradingView-Widget und TradingView Lightweight Charts™ · Copyright (c) 2024 TradingView, Inc. · <a href="https://www.tradingview.com/" target="_blank" rel="noopener">tradingview.com</a></span>
 </footer>
 
 <script src="/vendor/lightweight-charts.js"></script>
@@ -254,10 +261,10 @@ async function chartLaden(neu){
   letzteZeit=d.kerzen.at(-1).time;
   linienSetzen(d);
   const letzte=d.kerzen.at(-1),erste=d.kerzen.at(-2)||letzte;
-  $('chart-symbol').textContent=d.symbol;
+  if(!tvAn)$('chart-symbol').textContent=d.symbol;
   $('chart-preis').textContent=fmt(letzte.close,stellen);
   $('chart-preis').className='zahl '+(letzte.close>=erste.close?'gruen':'rot');
-  $('chart-quelle').textContent=`${d.zeitrahmen} · Quelle ${d.quelle}`;
+  if(!tvAn)$('chart-quelle').textContent=`${d.zeitrahmen} · Quelle ${d.quelle}`;
   analyseZeigen(d);
 }
 
@@ -337,11 +344,30 @@ const fragen=t=>senden('/api/frage',{text:t}).then(jarvisLaden);
 $('eingabe').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(t){$('frage').value='';fragen(t)}};
 $('analyse-knopf').onclick=()=>fragen(`Analysiere ${symbol} auf ${tf} für Daytrading: Trend, wichtige Zonen und ob es gerade ein Setup gibt – mit Einstieg, Stop-Loss, Ziel und Chance-Risiko-Verhältnis. Kurz.`);
 
+
+/* ---------- Echter TradingView-Chart (offizielles Widget) ---------- */
+let tvSymbole={}, tvAn=speicher.tv!==false, tvSchluessel='';
+const TV_INTERVALL={M1:'1',M5:'5',M15:'15',M30:'30',H1:'60',H4:'240',D1:'D'};
+function tvZeigen(){
+  document.body.classList.toggle('tv-modus',tvAn);$('tv-bereich').hidden=!tvAn;$('t-tv').setAttribute('aria-pressed',tvAn);
+  if(!tvAn||!symbol)return;
+  const ticker=tvSymbole[symbol]||symbol, schl=ticker+tf;
+  if(schl===tvSchluessel)return; tvSchluessel=schl;
+  $('chart-symbol').textContent=symbol;$('chart-quelle').textContent=`${tf} · TradingView ${ticker}`;
+  const box=$('tv-bereich');box.innerHTML='<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
+  const sk=document.createElement('script');sk.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';sk.async=true;
+  sk.textContent=JSON.stringify({autosize:true,symbol:ticker,interval:TV_INTERVALL[tf]||'15',timezone:'Europe/Vienna',theme:'dark',
+    style:'1',locale:'de_DE',backgroundColor:'rgba(11,21,26,1)',gridColor:'rgba(31,74,87,0.25)',allow_symbol_change:true,
+    hide_side_toolbar:false,withdateranges:true,studies:['STD;EMA','STD;RSI','STD;MACD'],support_host:'https://www.tradingview.com'});
+  box.firstChild.appendChild(sk);
+}
+$('t-tv').onclick=()=>{tvAn=!tvAn;speicher.tv=tvAn;merken();tvSchluessel='';tvZeigen();if(!tvAn)chartLaden(true)};
+
 /* ---------- Auswahl ---------- */
 function symbolWaehlen(s){symbol=s;speicher.symbol=s;merken();letzteZeit=0;linienSchluessel='';
-  document.querySelectorAll('#symbole .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===s));chartLaden(true)}
+  document.querySelectorAll('#symbole .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===s));tvZeigen();chartLaden(true)}
 function tfWaehlen(t){tf=t;speicher.tf=t;merken();letzteZeit=0;
-  document.querySelectorAll('#zeitrahmen .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));chartLaden(true)}
+  document.querySelectorAll('#zeitrahmen .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));tvZeigen();chartLaden(true)}
 ['M1','M5','M15','M30','H1','H4','D1'].forEach(t=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.dataset.t=t;
   b.setAttribute('aria-pressed',t===tf);b.onclick=()=>tfWaehlen(t);$('zeitrahmen').appendChild(b)});
 [['ema','t-ema'],['zonen','t-zonen'],['pivots','t-pivots'],['pos','t-pos']].forEach(([k,id])=>{$(id).setAttribute('aria-pressed',schalter[k]);
@@ -349,7 +375,7 @@ function tfWaehlen(t){tf=t;speicher.tf=t;merken();letzteZeit=0;
 
 holen('/api/trading_einstellungen').then(e=>{
   e.maerkte.forEach(s=>{const b=document.createElement('button');b.className='chip';b.textContent=s;b.dataset.s=s;b.onclick=()=>symbolWaehlen(s);$('symbole').appendChild(b)});
-  $('ueberblick-tf').textContent=e.zeitrahmen;
+  $('ueberblick-tf').textContent=e.zeitrahmen;tvSymbole=e.tradingview||{};
   if(!speicher.tf){tf=e.zeitrahmen;document.querySelectorAll('#zeitrahmen .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===tf))}
   symbolWaehlen(e.maerkte.includes(speicher.symbol)?speicher.symbol:e.maerkte[0]);
 }).catch(()=>{$('chart-meldung').textContent='Keine Verbindung zu Jarvis – läuft das schwarze Fenster?'});
