@@ -6,6 +6,7 @@ Kursquelle: MetaTrader 5. Ist MT5 nicht erreichbar, kommen Krypto-Kurse
 """
 
 import json
+import threading
 import time
 import urllib.request
 
@@ -39,6 +40,24 @@ def _stellen_schaetzen(preis):
     return 2 if preis >= 100 else 3 if preis >= 10 else 5
 
 
+# Zwischenspeicher für Internet-Kursquellen (MT5 ist lokal und schnell, das wird nie gespeichert).
+# So holen Chart, Watchlist, Setup-Scanner und Alarme die Kerzen nicht alle einzeln aus dem Internet.
+_CACHE_SEKUNDEN = {"M1": 15, "M5": 20, "M15": 30, "M30": 45, "H1": 90, "H4": 300, "D1": 900}
+_cache = {}
+_cache_sperre = threading.Lock()
+
+
+def _aus_cache(schluessel, sekunden, laden):
+    with _cache_sperre:
+        eintrag = _cache.get(schluessel)
+        if eintrag and time.time() - eintrag[0] < sekunden:
+            return eintrag[1]
+    wert = laden()
+    with _cache_sperre:
+        _cache[schluessel] = (time.time(), wert)
+    return wert
+
+
 def kerzen_holen(symbol, zeitrahmen, anzahl=300):
     """
     Gibt (symbolname, nachkommastellen, quelle, kerzen) zurück.
@@ -50,20 +69,25 @@ def kerzen_holen(symbol, zeitrahmen, anzahl=300):
         return sym, mt.nachkommastellen(sym), "MT5", kerzen
     except mt.MT5Fehler as fehler:
         mt5_fehler = fehler
+    menge = max(anzahl, 400)
+    sekunden = _CACHE_SEKUNDEN.get(zeitrahmen, 30)
     coin = KRYPTO.get(symbol.upper().replace("/", ""))
     if coin:
         try:
-            kerzen = _hyperliquid_kerzen(coin, zeitrahmen, anzahl)
+            kerzen = _aus_cache(("HL", coin, zeitrahmen), sekunden,
+                                lambda: _hyperliquid_kerzen(coin, zeitrahmen, menge))
             if kerzen:
-                return f"{coin} (Hyperliquid)", _stellen_schaetzen(kerzen[-1]["close"]), "Hyperliquid", kerzen
+                return (f"{coin} (Hyperliquid)", _stellen_schaetzen(kerzen[-1]["close"]), "Hyperliquid",
+                        kerzen[-anzahl:])
         except Exception:
             pass
     if kursquellen.yahoo_kuerzel(symbol):
         try:
-            kuerzel, kerzen = kursquellen.yahoo_kerzen(symbol, zeitrahmen, anzahl)
+            kuerzel, kerzen = _aus_cache(("Y", kursquellen.yahoo_kuerzel(symbol), zeitrahmen), sekunden,
+                                         lambda: kursquellen.yahoo_kerzen(symbol, zeitrahmen, menge))
             if kerzen:
                 return (f"{symbol.upper()} ({kuerzel})", _stellen_schaetzen(kerzen[-1]["close"]),
-                        "Yahoo Finance", kerzen)
+                        "Yahoo Finance", kerzen[-anzahl:])
         except Exception:
             pass
     raise mt5_fehler
@@ -127,9 +151,51 @@ def ueberblick_daten():
             schluss = [k["close"] for k in kerzen]
             tag_start = next((k["open"] for k in kerzen if time.gmtime(k["zeit"]).tm_yday
                               == time.gmtime(kerzen[-1]["zeit"]).tm_yday), kerzen[0]["open"])
+            try:
+                trend_h1 = ind.trend(kerzen_holen(name, "H1", 200)[3])
+            except Exception:
+                trend_h1 = None
             ergebnis.append({"name": name, "symbol": sym, "preis": schluss[-1], "stellen": stellen,
-                             "trend": ind.trend(kerzen), "rsi": ind.rsi(schluss)[-1],
+                             "quelle": quelle, "trend": ind.trend(kerzen), "trend_h1": trend_h1,
+                             "rsi": ind.rsi(schluss)[-1],
                              "prozent": (schluss[-1] / tag_start - 1) * 100 if tag_start else 0})
         except Exception as fehler:
             ergebnis.append({"name": name, "fehler": str(fehler)[:120]})
     return ergebnis
+
+
+def setups_daten(zeitrahmen="M15", maerkte=None):
+    """Setup-Scanner für alle Märkte – als Daten für die Zentrale."""
+    from trading import setups
+    ergebnis = []
+    for name in maerkte or einstellungen.TRADING_MAERKTE:
+        try:
+            sym, stellen, quelle, kerzen = kerzen_holen(name, zeitrahmen, 300)
+            h1 = kerzen_holen(name, "H1", 200)[3]
+        except Exception as fehler:
+            ergebnis.append({"name": name, "fehler": str(fehler)[:120]})
+            continue
+        e = setups.finde_setup(kerzen, h1, name, stellen)
+        ergebnis.append({"name": name, "stellen": stellen, "quelle": quelle, "setup": e.get("setup"),
+                         "grund": e.get("grund"), "trend_h1": e.get("trend_h1"), "rsi": e.get("rsi"),
+                         "preis": e.get("preis")})
+    return ergebnis
+
+
+def positions_rechner(symbol, einstieg, stop, risiko_prozent=None):
+    """Lotgröße für festes Risiko. Nutzt MT5-Kontraktdaten und -Kontostand, wenn verfügbar."""
+    from trading import setups
+    risiko_prozent = einstellungen.RISIKO_STANDARD_PROZENT if risiko_prozent is None else risiko_prozent
+    wert = None
+    schritt = 0.01
+    konto = einstellungen.FTMO_KONTOGROESSE
+    konto_quelle = "Kontogröße aus den Einstellungen"
+    try:
+        wert, schritt = mt.kontrakt_info(symbol)
+        konto = mt.kontostand()["equity"]
+        konto_quelle = "Equity aus MT5"
+    except Exception:
+        pass
+    r = setups.positionsgroesse(konto, risiko_prozent, einstieg, stop, wert, schritt or 0.01, symbol)
+    r.update({"konto": konto, "konto_quelle": konto_quelle, "risiko_prozent": risiko_prozent})
+    return r

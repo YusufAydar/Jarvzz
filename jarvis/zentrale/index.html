@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis Trading-Zentrale</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: Kopfleiste (Logo, Laufleiste, Sessions, News, Ampel, Uhr) – darunter drei Spalten:
+   links Konto/Watchlist/Setups/Rechner · Mitte Live-Chart + Jarvis · rechts Analyse/News/Alarme/Profis/Meldungen */
+:root{
+  --bg:#070b14; --panel:#0d1424; --panel-2:#111b2f; --line:#1c2a44; --line-2:#2a3d61;
+  --text:#e7eef8; --dim:#8090ab; --dim-2:#5d6c88;
+  --cyan:#22d3ee; --green:#22e39a; --red:#ff4d6a; --amber:#fbbf24; --violet:#a78bfa;
+  --logo:"Orbitron","Rajdhani","Segoe UI",sans-serif;
+  --sans:"Rajdhani","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",Consolas,ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,#0f1c33 0%,var(--bg) 60%) fixed;color:var(--text);font-family:var(--sans);font-size:15px;display:flex;flex-direction:column;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.mono{font-family:var(--mono)} .zahl{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dim{color:var(--dim)} .gruen{color:var(--green)} .rot{color:var(--red)} .amber{color:var(--amber)} .cyan{color:var(--cyan)}
+[hidden]{display:none!important}
+
+/* ---------- Kopfleiste ---------- */
+header{display:flex;align-items:center;gap:20px;padding:10px 18px;border-bottom:1px solid var(--line);min-height:62px}
+.logo{font-family:var(--logo);font-weight:900;font-size:22px;letter-spacing:.32em;color:var(--cyan);text-shadow:0 0 18px rgba(34,211,238,.45);line-height:1}
+.logo small{display:block;font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.42em;color:var(--dim);text-shadow:none;margin-top:5px}
+#laufleiste{flex:1;min-width:0;display:flex;gap:22px;overflow:hidden;white-space:nowrap;font-family:var(--mono);font-size:12.5px;mask-image:linear-gradient(90deg,#000 92%,transparent)}
+#laufleiste .t{display:inline-flex;gap:7px;cursor:pointer}
+#laufleiste .t b{font-weight:600}
+.kopf-rechts{display:flex;align-items:center;gap:14px}
+.pille{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);border-radius:999px;padding:5px 11px;font-family:var(--mono);font-size:11.5px;white-space:nowrap;background:rgba(10,17,32,.6)}
+.punkt{width:8px;height:8px;border-radius:50%;background:var(--dim-2);display:inline-block}
+.punkt.an{background:var(--green);box-shadow:0 0 8px var(--green)}
+#uhr{font-family:var(--mono);font-size:20px;color:var(--cyan);font-weight:600}
+.knopf{background:rgba(10,17,32,.7);border:1px solid var(--line-2);border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:700;letter-spacing:.06em;font-size:13px}
+.knopf:hover,.knopf:focus-visible{border-color:var(--cyan);outline:none}
+.knopf.primaer{border-color:var(--cyan);color:var(--cyan)}
+.knopf.klein{padding:4px 9px;font-size:12px;border-radius:7px}
+
+/* ---------- Raster ---------- */
+main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 380px;gap:14px;padding:14px 16px}
+.spalte{display:flex;flex-direction:column;gap:14px;min-height:0;min-width:0;overflow:auto;padding-right:2px}
+.spalte::-webkit-scrollbar{width:6px}.spalte::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.karte{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:0;flex-shrink:0}
+.kopf{display:flex;align-items:center;gap:8px;padding:11px 14px 0;font-weight:700;font-size:11.5px;letter-spacing:.26em;color:var(--dim)}
+.kopf .r{margin-left:auto;color:var(--cyan);letter-spacing:.14em;font-size:11px}
+.inhalt{padding:10px 14px 14px;min-height:0}
+.leer{color:var(--dim-2);font-family:var(--mono);font-size:12px;line-height:1.6}
+
+/* Konto */
+.kacheln3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kachel{background:rgba(7,11,20,.55);border:1px solid var(--line);border-radius:9px;padding:8px 6px;text-align:center}
+.kachel .l{font-size:10px;letter-spacing:.2em;color:var(--dim)}
+.kachel .w{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:3px}
+.balken{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:5px 0 3px}
+.balken i{display:block;height:100%;border-radius:3px;transition:width .5s}
+.zeile{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0}
+.zeile span:first-child{color:var(--dim)}
+.ampel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;padding:2px 8px;border:1px solid currentColor;border-radius:999px}
+
+/* Watchlist / Setups */
+.liste-zeile{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 2px;cursor:pointer;text-align:left}
+.liste-zeile:last-child{border-bottom:0}
+.liste-zeile:hover,.liste-zeile:focus-visible{background:rgba(34,211,238,.05);outline:none}
+.liste-zeile.aktiv{background:rgba(251,191,36,.06)}
+.liste-zeile .n{font-weight:700;font-size:15px}
+.liste-zeile .u{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.badge{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.setup-zeile{border-bottom:1px solid var(--line);padding:8px 2px;cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.setup-zeile:last-child{border-bottom:0}
+.setup-zeile:hover,.setup-zeile:focus-visible{background:rgba(34,211,238,.05);outline:none}
+.setup-zeile .k{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.setup-zeile .d{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+
+/* Formulare */
+.formular{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.formular label{display:flex;flex-direction:column;gap:3px;font-size:11px;letter-spacing:.14em;color:var(--dim)}
+.formular input,.formular select{background:rgba(7,11,20,.7);border:1px solid var(--line-2);border-radius:7px;padding:7px 8px;font-family:var(--mono);font-size:13px;min-width:0}
+.formular input:focus,.formular select:focus{outline:none;border-color:var(--cyan)}
+.ergebnis{margin-top:10px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.3);border-radius:9px;padding:9px 11px;font-size:14px}
+.ergebnis b{font-family:var(--mono);font-size:20px;color:var(--cyan)}
+
+/* ---------- Mitte ---------- */
+.mitte{display:flex;flex-direction:column;gap:14px;min-height:0;min-width:0}
+#karte-chart{flex:1;min-height:320px}
+.chart-kopf{display:flex;align-items:center;gap:12px;padding:12px 14px 8px;flex-wrap:wrap}
+#chart-symbol{font-family:var(--logo);font-weight:700;font-size:19px;letter-spacing:.08em}
+#chart-preis{font-size:19px;font-weight:600}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:#0a1120;border:1px solid var(--line-2);border-radius:999px;padding:4px 12px;cursor:pointer;font-weight:700;font-size:13px;letter-spacing:.03em}
+.chip:hover,.chip:focus-visible{border-color:var(--cyan);outline:none}
+.chip[aria-pressed="true"]{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 1px rgba(251,191,36,.25) inset}
+.chip.tf{font-family:var(--mono);font-size:12px;padding:4px 9px}
+.trenner{width:1px;align-self:stretch;background:var(--line)}
+#chart-flaeche{flex:1;position:relative;margin:0 10px 6px;border-radius:9px;overflow:hidden;min-height:240px;border:1px solid var(--line)}
+#tv-bereich,#eigen-bereich{position:absolute;inset:0}
+#tv-bereich .tradingview-widget-container,#tv-bereich .tradingview-widget-container__widget{height:100%;width:100%}
+#eigen-bereich{display:flex;flex-direction:column}
+#chart{flex:1;position:relative} #rsi-chart{height:105px;position:relative;border-top:1px solid var(--line)}
+#chart-meldung{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--dim);font-family:var(--mono);font-size:13px;background:rgba(7,11,20,.85);z-index:5}
+.chart-fuss{display:flex;gap:14px;flex-wrap:wrap;padding:0 14px 10px;font-family:var(--mono);font-size:10.5px;color:var(--dim-2)}
+.chart-fuss a{color:var(--dim)}
+.legende i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px}
+
+/* Jarvis-Dock */
+#dock{height:270px;flex-shrink:0;display:grid;grid-template-columns:150px minmax(0,1fr);gap:0}
+.orb-bereich{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--line);padding:10px}
+#orb{width:118px;height:118px}
+#modus-text{font-weight:700;font-size:11px;letter-spacing:.34em;color:var(--cyan);margin-top:6px;text-align:center}
+.dock-rechts{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+#dialog{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.blase{max-width:86%;padding:8px 12px;border-radius:9px;font-size:14.5px;line-height:1.4;white-space:pre-wrap}
+.blase .z{display:block;font-size:10px;color:var(--dim-2);letter-spacing:.1em;margin-bottom:2px}
+.blase.jarvis{align-self:flex-start;background:rgba(34,211,238,.06);border-left:3px solid var(--cyan)}
+.blase.du{align-self:flex-end;background:rgba(251,191,36,.05);border-right:3px solid var(--amber);text-align:right}
+.schnell{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px}
+.eingabe{display:flex;gap:8px;padding:0 14px 12px}
+.eingabe input{flex:1;min-width:0;background:rgba(7,11,20,.7);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;font-size:15px}
+.eingabe input:focus{outline:none;border-color:var(--cyan)}
+#freigabe{position:absolute;inset:8px;background:rgba(13,8,14,.96);border:1px solid var(--red);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;z-index:6}
+#freigabe pre{flex:1;margin:0;overflow:auto;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:7px;padding:8px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-word}
+
+/* ---------- Rechts ---------- */
+.tv-raster{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tv-zelle{border-radius:9px;padding:7px 4px;text-align:center;border:1px solid var(--line);background:rgba(7,11,20,.5)}
+.tv-zelle .l{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.tv-zelle .w{font-weight:700;font-size:12.5px;margin-top:2px;letter-spacing:.02em}
+.kacheln2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.mini{border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:rgba(7,11,20,.5)}
+.mini .l{font-size:10px;letter-spacing:.18em;color:var(--dim)}
+.mini .w{font-weight:700;font-size:15px}
+.zonen{margin-top:8px;font-family:var(--mono);font-size:12px;line-height:1.75}
+.news{display:grid;grid-template-columns:44px 40px 1fr;gap:8px;align-items:start;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.news:last-child{border-bottom:0}
+.news .zeit{font-family:var(--mono);font-size:12px}
+.news .w{font-family:var(--mono);font-size:11px;border:1px solid var(--line-2);border-radius:5px;text-align:center;padding:1px 0}
+.news.vorbei{opacity:.45}
+.news.bald{background:rgba(255,77,106,.08);border-radius:7px}
+.news .imp{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.reiter{display:flex;gap:6px}
+.reiter button{background:none;border:0;border-bottom:2px solid transparent;padding:2px 2px 4px;cursor:pointer;font-weight:700;font-size:11.5px;letter-spacing:.24em;color:var(--dim)}
+.reiter button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--cyan)}
+.meldung{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.meldung:last-child{border-bottom:0}
+.meldung .x{margin-left:auto;background:none;border:0;color:var(--dim);cursor:pointer}
+.alarm{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px}
+.alarm button{background:none;border:0;color:var(--dim);cursor:pointer}
+
+@media (max-width:1350px){
+  body{overflow:auto;height:auto} main{grid-template-columns:1fr 1fr} .mitte{grid-column:1/-1;order:-1}
+  #karte-chart{min-height:560px} .spalte{overflow:visible}
+}
+@media (max-width:780px){main{grid-template-columns:1fr} #laufleiste{display:none} #dock{grid-template-columns:1fr;height:auto} .orb-bereich{display:none} #dialog{max-height:260px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">JARVIS<small>TRADING-ZENTRALE</small></div>
+  <div id="laufleiste" aria-label="Kurse"></div>
+  <div class="kopf-rechts">
+    <span class="pille" id="sessions" title="Handelssitzungen (ungefähre Zeiten)"></span>
+    <span class="pille" id="news-pille" title="Nächste wichtige News">NEWS –</span>
+    <span class="pille" id="ampel-pille" title="FTMO-Ampel">FTMO –</span>
+    <span id="uhr">--:--:--</span>
+    <button class="knopf primaer" id="mikro">🎙 MIKRO</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= LINKS ================= -->
+  <div class="spalte">
+    <section class="karte">
+      <div class="kopf">FTMO-KONTO <span class="r" id="ampel"></span></div>
+      <div class="inhalt" id="konto"><div class="leer">Lade …</div></div>
+    </section>
+    <section class="karte">
+      <div class="kopf">WATCHLIST <span class="r" id="watch-tf"></span></div>
+      <div class="inhalt" id="watchlist"><div class="leer">Lade Kurse …</div></div>
+    </section>
+    <section class="karte">
+      <div class="kopf">SETUP-SCANNER <span class="r" id="setup-zeit"></span><button class="knopf klein" id="setup-neu" title="Neu scannen" style="margin-left:6px">↻</button></div>
+      <div class="inhalt" id="setups"><div class="leer">Scanne Märkte …</div></div>
+    </section>
+    <section class="karte">
+      <div class="kopf">POSITIONSRECHNER <span class="r" id="rechner-symbol"></span></div>
+      <div class="inhalt">
+        <form class="formular" id="rechner">
+          <label>RISIKO %<input id="r-risiko" type="number" step="0.05" min="0.05" max="5" value="0.5"></label>
+          <label>RICHTUNG<select id="r-richtung"><option>LONG</option><option>SHORT</option></select></label>
+          <label>EINSTIEG<input id="r-einstieg" type="number" step="any" required></label>
+          <label>STOP-LOSS<input id="r-stop" type="number" step="any" required></label>
+          <button class="knopf primaer" type="submit" style="grid-column:1/-1">BERECHNEN</button>
+        </form>
+        <div id="r-ergebnis"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= MITTE ================= -->
+  <div class="mitte">
+    <section class="karte" id="karte-chart">
+      <div class="chart-kopf">
+        <span id="chart-symbol">–</span><span id="chart-preis" class="zahl">–</span>
+        <div class="chips" id="symbole" aria-label="Markt"></div>
+      </div>
+      <div class="chart-kopf" style="padding-top:0">
+        <div class="chips" id="zeitrahmen" aria-label="Zeitrahmen"></div>
+        <span class="trenner"></span>
+        <div class="chips">
+          <button class="chip" id="m-tv" aria-pressed="true">TRADINGVIEW</button>
+          <button class="chip" id="m-eigen" aria-pressed="false" title="Eigener Chart mit Zonen, Pivots und deinen Positionen">JARVIS-CHART</button>
+        </div>
+        <span class="trenner"></span>
+        <button class="knopf klein" data-frage="analyse">⚡ ANALYSE</button>
+        <button class="knopf klein" data-frage="setup">🎯 SETUP?</button>
+        <button class="knopf klein" data-frage="ansehen" title="Jarvis macht einen Screenshot und schaut sich deinen Chart an">👁 SCHAU DIR DEN CHART AN</button>
+      </div>
+      <div id="chart-flaeche">
+        <div id="tv-bereich"></div>
+        <div id="eigen-bereich" hidden><div id="chart"></div><div id="rsi-chart"></div></div>
+        <div id="chart-meldung" hidden></div>
+      </div>
+      <div class="chart-fuss">
+        <span class="legende" id="legende" hidden><i style="background:#22d3ee"></i>EMA 20 &nbsp;<i style="background:#fbbf24"></i>EMA 50 &nbsp;<i style="background:#22e39a"></i>Unterstützung &nbsp;<i style="background:#ff4d6a"></i>Widerstand &nbsp;<i style="background:#a78bfa"></i>Pivot</span>
+        <span id="chart-quelle"></span>
+        <span>Charts: <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a> (Widget &amp; Lightweight Charts™, © TradingView, Inc.)</span>
+      </div>
+    </section>
+
+    <section class="karte" id="dock">
+      <div class="orb-bereich"><canvas id="orb" width="236" height="236" aria-hidden="true"></canvas><div id="modus-text">BEREIT</div></div>
+      <div class="dock-rechts">
+        <div id="dialog" aria-live="polite"></div>
+        <div class="schnell">
+          <button class="knopf klein" data-frage="setup">Gibt es ein Setup?</button>
+          <button class="knopf klein" data-frage="news">News heute?</button>
+          <button class="knopf klein" data-frage="konto">Wie steht mein Konto?</button>
+          <button class="knopf klein" data-frage="tagebuch">Wie lief meine Woche?</button>
+        </div>
+        <form class="eingabe" id="eingabe">
+          <input id="frage" autocomplete="off" placeholder="Frag Jarvis … z. B. „Zeig mir Gold auf H1“">
+          <button class="knopf primaer" type="submit">SENDEN</button>
+        </form>
+        <div id="freigabe" role="alertdialog" aria-labelledby="fg-titel" hidden>
+          <div class="rot" style="font-weight:700;letter-spacing:.2em;font-size:12px">⚠ FREIGABE NÖTIG</div>
+          <div id="fg-titel" style="font-weight:700;font-size:16px"></div>
+          <pre id="fg-details"></pre>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="knopf" id="fg-ja" style="border-color:var(--green);color:var(--green)">✓ ERLAUBEN</button>
+            <button class="knopf" id="fg-nein" style="border-color:var(--red);color:var(--red)">✕ ABLEHNEN</button>
+            <span class="dim" style="font-size:12px">oder „Ja“ / „Nein“ sagen</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= RECHTS ================= -->
+  <div class="spalte">
+    <section class="karte">
+      <div class="kopf">ANALYSE <span class="r" id="analyse-symbol"></span></div>
+      <div class="inhalt">
+        <div class="dim" style="font-size:11px;letter-spacing:.18em;margin-bottom:6px">TRADINGVIEW-RATING</div>
+        <div class="tv-raster" id="tv-ratings"><div class="leer" style="grid-column:1/-1">Lade …</div></div>
+        <div id="analyse"></div>
+      </div>
+    </section>
+    <section class="karte">
+      <div class="kopf">NEWS <span class="r" id="news-zahl"></span></div>
+      <div class="inhalt" id="news" style="max-height:250px;overflow:auto"><div class="leer">Lade Kalender …</div></div>
+    </section>
+    <section class="karte">
+      <div class="kopf">ALARME <span class="r" id="alarm-zahl"></span></div>
+      <div class="inhalt">
+        <div id="alarme"><div class="leer">Keine Alarme.</div></div>
+        <form class="formular" id="alarm-form" style="margin-top:8px">
+          <label>ART<select id="a-art">
+            <option value="preis_ueber">Preis über</option><option value="preis_unter">Preis unter</option>
+            <option value="rsi_ueber">RSI über</option><option value="rsi_unter">RSI unter</option>
+            <option value="setup">Setup gefunden</option></select></label>
+          <label>WERT<input id="a-wert" type="number" step="any" placeholder="z. B. 4100"></label>
+          <button class="knopf primaer" type="submit" style="grid-column:1/-1" id="a-knopf">+ ALARM</button>
+        </form>
+      </div>
+    </section>
+    <section class="karte">
+      <div class="kopf">HYPERLIQUID-PROFIS <span class="r">24 H</span></div>
+      <div class="inhalt" id="profis"><div class="leer">Lade …</div></div>
+    </section>
+    <section class="karte" style="flex-shrink:1">
+      <div class="kopf"><div class="reiter" role="tablist">
+        <button role="tab" aria-selected="true" id="tab-meldungen">MELDUNGEN</button>
+        <button role="tab" aria-selected="false" id="tab-tagebuch">TAGEBUCH</button></div>
+        <span class="r" id="meldung-zahl"></span></div>
+      <div class="inhalt" id="meldungen"></div>
+      <div class="inhalt" id="tagebuch" hidden></div>
+    </section>
+  </div>
+</main>
+
+<script src="/vendor/lightweight-charts.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(x,n=2)=>x==null||isNaN(x)?'–':Number(x).toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+const holen=url=>fetch(url,{cache:'no-store'}).then(r=>r.json());
+const senden=(url,d)=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Jarvis':'1'},body:JSON.stringify(d)}).then(r=>r.json());
+let speicher={};try{speicher=JSON.parse(localStorage.getItem('jarvis-zentrale')||'{}')}catch(e){}
+const merken=()=>{try{localStorage.setItem('jarvis-zentrale',JSON.stringify(speicher))}catch(e){}};
+const norm=s=>String(s||'').toUpperCase().replace(/[\s\/]/g,'').replace('.CASH','');
+
+let E={maerkte:[],tradingview:{},alle_tradingview:{},zeitrahmen:'M15',risiko:0.5};
+let symbol=null, tf=speicher.tf||'M15', ansicht=speicher.ansicht||'tv', stellen=2;
+let letzterChartBefehl=0, ersterZustand=true, positionen=[], analyseDaten=null, kalenderDaten=[], ueberblickDaten=[];
+const TFS=['M1','M5','M15','M30','H1','H4','D1'];
+const TV_INTERVALL={M1:'1',M5:'5',M15:'15',M30:'30',H1:'60',H4:'240',D1:'D'};
+
+/* ================= Uhr & Sessions ================= */
+function uhrTick(){
+  const d=new Date();$('uhr').textContent=d.toLocaleTimeString('de-DE');
+  const h=d.getUTCHours()+d.getUTCMinutes()/60, wtag=d.getUTCDay(), wochenende=wtag===6||(wtag===0&&h<22)||(wtag===5&&h>=22);
+  const s=[['TOKIO',0,9],['LONDON',7,16],['NEW YORK',13,22]].map(([n,a,b])=>`<span><i class="punkt ${!wochenende&&h>=a&&h<b?'an':''}"></i> ${n}</span>`);
+  $('sessions').innerHTML=s.join(' ');
+  newsCountdown();
+}
+setInterval(uhrTick,1000);
+
+/* ================= Chart: TradingView-Widget ================= */
+function tvTicker(s){const n=norm(s);if(n.includes(':'))return n;return E.alle_tradingview[n]||E.tradingview[s]||n}
+let tvSchluessel='';
+function tvZeigen(){
+  if(ansicht!=='tv'||!symbol)return;
+  const ticker=tvTicker(symbol), schl=ticker+'|'+tf;
+  if(schl===tvSchluessel)return;tvSchluessel=schl;$('chart-meldung').hidden=true;
+  $('chart-quelle').textContent=`TradingView ${ticker} · ${tf}`;
+  const box=$('tv-bereich');
+  box.innerHTML='<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
+  const sk=document.createElement('script');
+  sk.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';sk.async=true;
+  sk.textContent=JSON.stringify({autosize:true,symbol:ticker,interval:TV_INTERVALL[tf]||'15',timezone:'Europe/Vienna',
+    theme:'dark',style:'1',locale:'de_DE',backgroundColor:'rgba(13,20,36,1)',gridColor:'rgba(42,61,97,0.25)',
+    allow_symbol_change:true,withdateranges:true,hide_side_toolbar:false,details:false,calendar:false,
+    studies:['STD;EMA','STD;RSI','STD;MACD'],support_host:'https://www.tradingview.com'});
+  sk.onerror=()=>{$('chart-meldung').hidden=false;$('chart-meldung').textContent='TradingView konnte nicht geladen werden (Internet?). Umschalten auf JARVIS-CHART geht immer.'};
+  box.firstChild.appendChild(sk);
+}
+
+/* ================= Chart: eigener Jarvis-Chart ================= */
+let chart=null,kerzenS,ema20,ema50,rsiChart,rsiLinie,linien=[],linienSchl='',letzteZeit=0,ladeId=0;
+function eigenAnlegen(){
+  if(chart)return;
+  const basis={layout:{background:{type:'solid',color:'transparent'},textColor:'#8090ab',fontFamily:'JetBrains Mono, Consolas, monospace'},
+    grid:{vertLines:{color:'rgba(42,61,97,.25)'},horzLines:{color:'rgba(42,61,97,.25)'}},rightPriceScale:{borderColor:'#1c2a44'},
+    timeScale:{borderColor:'#1c2a44',timeVisible:true,secondsVisible:false},crosshair:{mode:0},autoSize:true,localization:{locale:'de-DE'}};
+  chart=LightweightCharts.createChart($('chart'),basis);
+  kerzenS=chart.addCandlestickSeries({upColor:'#22e39a',downColor:'#ff4d6a',borderVisible:false,wickUpColor:'#22e39a',wickDownColor:'#ff4d6a'});
+  ema20=chart.addLineSeries({color:'#22d3ee',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  ema50=chart.addLineSeries({color:'#fbbf24',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  rsiChart=LightweightCharts.createChart($('rsi-chart'),{...basis,timeScale:{...basis.timeScale,visible:false}});
+  rsiLinie=rsiChart.addLineSeries({color:'#a78bfa',lineWidth:2,priceLineVisible:false,autoscaleInfoProvider:()=>({priceRange:{minValue:0,maxValue:100}})});
+  [70,30].forEach(w=>rsiLinie.createPriceLine({price:w,color:w===70?'#ff4d6a':'#22e39a',lineWidth:1,lineStyle:2,axisLabelVisible:true}));
+  let sync=false;
+  chart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(sync||!r)return;sync=true;rsiChart.timeScale().setVisibleLogicalRange(r);sync=false});
+  rsiChart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(sync||!r)return;sync=true;chart.timeScale().setVisibleLogicalRange(r);sync=false});
+}
+const mitLuecken=(k,p)=>{const m=new Map(p.map(x=>[x.time,x.value]));return k.map(x=>m.has(x.time)?{time:x.time,value:m.get(x.time)}:{time:x.time})};
+function linienSetzen(d){
+  const a=d.analyse,l=[];
+  (a.unterstuetzungen||[]).forEach(([p,n])=>l.push({price:p,color:'#22e39a',title:`S ${n}x`,lineStyle:0}));
+  (a.widerstaende||[]).forEach(([p,n])=>l.push({price:p,color:'#ff4d6a',title:`R ${n}x`,lineStyle:0}));
+  if(a.pivots)Object.entries(a.pivots).forEach(([k,p])=>l.push({price:p,color:'#a78bfa',title:k,lineStyle:2}));
+  positionen.filter(p=>p.symbol===d.symbol).forEach(p=>{l.push({price:p.einstieg,color:'#e7eef8',title:`${p.richtung} ${p.volumen}`,lineStyle:0});
+    if(p.sl)l.push({price:p.sl,color:'#ff4d6a',title:'SL',lineStyle:1});if(p.tp)l.push({price:p.tp,color:'#22e39a',title:'TP',lineStyle:1})});
+  const s=JSON.stringify(l);if(s===linienSchl)return;linienSchl=s;
+  linien.forEach(x=>kerzenS.removePriceLine(x));linien=l.map(x=>kerzenS.createPriceLine({...x,lineWidth:1,axisLabelVisible:true}));
+}
+
+async function chartDatenLaden(neu){
+  if(!symbol)return;
+  const id=++ladeId;
+  let d;try{d=await holen(`/api/chart?symbol=${encodeURIComponent(symbol)}&tf=${tf}`)}catch(e){d={fehler:'Keine Verbindung zu Jarvis – läuft das schwarze Fenster?'}}
+  if(id!==ladeId)return;
+  if(d.fehler){analyseDaten=null;analyseZeigen();
+    if(ansicht==='eigen'){$('chart-meldung').hidden=false;$('chart-meldung').textContent=d.fehler}
+    $('chart-preis').textContent='–';return}
+  analyseDaten=d;stellen=d.stellen;
+  const letzte=d.kerzen.at(-1),vorher=d.kerzen.at(-2)||letzte;
+  $('chart-preis').textContent=fmt(letzte.close,stellen);$('chart-preis').className='zahl '+(letzte.close>=vorher.close?'gruen':'rot');
+  if(!$('r-einstieg').value&&!$('r-einstieg').dataset.manuell)$('r-einstieg').placeholder=fmt(letzte.close,stellen);
+  analyseZeigen();
+  if(ansicht!=='eigen')return;
+  $('chart-meldung').hidden=true;eigenAnlegen();
+  kerzenS.applyOptions({priceFormat:{type:'price',precision:stellen,minMove:1/10**stellen}});
+  if(neu||!letzteZeit){kerzenS.setData(d.kerzen);ema20.setData(d.ema20);ema50.setData(d.ema50);rsiLinie.setData(mitLuecken(d.kerzen,d.rsi));chart.timeScale().scrollToRealTime();linienSchl=''}
+  else{d.kerzen.filter(k=>k.time>=letzteZeit).forEach(k=>kerzenS.update(k));
+    [[ema20,d.ema20],[ema50,d.ema50],[rsiLinie,d.rsi]].forEach(([s,w])=>w.filter(p=>p.time>=letzteZeit).forEach(p=>s.update(p)))}
+  letzteZeit=letzte.time;linienSetzen(d);
+  $('chart-quelle').textContent=`Jarvis-Chart · ${d.symbol} · ${d.zeitrahmen} · Quelle ${d.quelle}`;
+}
+
+function ansichtSetzen(a){
+  ansicht=a;speicher.ansicht=a;merken();
+  $('m-tv').setAttribute('aria-pressed',a==='tv');$('m-eigen').setAttribute('aria-pressed',a==='eigen');
+  $('tv-bereich').hidden=a!=='tv';$('eigen-bereich').hidden=a!=='eigen';$('legende').hidden=a!=='eigen';
+  $('chart-meldung').hidden=true;tvSchluessel='';letzteZeit=0;
+  if(a==='tv')tvZeigen();else chartDatenLaden(true);
+}
+$('m-tv').onclick=()=>ansichtSetzen('tv');$('m-eigen').onclick=()=>ansichtSetzen('eigen');
+
+/* ================= Auswahl Markt & Zeitrahmen ================= */
+function chipsBauen(){
+  const liste=[...E.maerkte];if(symbol&&!liste.includes(symbol))liste.push(symbol);
+  $('symbole').innerHTML=liste.map(s=>`<button class="chip" data-s="${esc(s)}" aria-pressed="${s===symbol}">${esc(s)}</button>`).join('');
+}
+$('symbole').onclick=e=>{const b=e.target.closest('[data-s]');if(b)waehle(b.dataset.s)};
+TFS.forEach(t=>{const b=document.createElement('button');b.className='chip tf';b.textContent=t;b.dataset.t=t;b.onclick=()=>waehle(symbol,t);$('zeitrahmen').appendChild(b)});
+function waehle(s,t){
+  const neuSym=s!==symbol;symbol=s;if(t)tf=t;speicher.symbol=symbol;speicher.tf=tf;merken();
+  chipsBauen();document.querySelectorAll('#zeitrahmen .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===tf));
+  $('chart-symbol').textContent=symbol;$('analyse-symbol').textContent=`${symbol} · ${tf}`;$('rechner-symbol').textContent=symbol;
+  $('a-knopf').textContent=`+ ALARM FÜR ${symbol}`;
+  if(neuSym){$('r-einstieg').value='';$('r-stop').value='';$('r-ergebnis').innerHTML='';tvLaden()}
+  letzteZeit=0;tvSchluessel='';if(ansicht==='tv')tvZeigen();chartDatenLaden(true);watchlistZeigen();
+}
+
+/* ================= Analyse (eigene Indikatoren + TradingView-Rating) ================= */
+const tFarbe=t=>!t?'dim':t.startsWith('Auf')?'gruen':t.startsWith('Ab')?'rot':'amber';
+function analyseZeigen(){
+  const d=analyseDaten;
+  if(!d){$('analyse').innerHTML='<div class="leer" style="margin-top:8px">Keine eigenen Kursdaten für diesen Markt.</div>';return}
+  const a=d.analyse;
+  $('analyse').innerHTML=`<div class="kacheln2">
+    <div class="mini"><div class="l">TREND ${d.zeitrahmen}</div><div class="w ${tFarbe(a.trend)}">${esc(a.trend)}</div></div>
+    <div class="mini"><div class="l">TREND H1</div><div class="w ${tFarbe(a.trend_h1)}">${esc(a.trend_h1||'–')}</div></div>
+    <div class="mini"><div class="l">RSI 14</div><div class="w zahl ${a.rsi>70?'rot':a.rsi<30?'gruen':''}">${fmt(a.rsi,1)}</div></div>
+    <div class="mini"><div class="l">MACD</div><div class="w ${a.macd_hist>0?'gruen':'rot'}">${a.macd_hist>0?'▲ bullisch':'▼ bärisch'}${a.macd_kreuzung?' ✦':''}</div></div>
+    <div class="mini" style="grid-column:1/-1"><div class="l">ATR · STOP-IDEE 1,5 ATR</div><div class="w zahl">${fmt(a.atr,stellen)} → ${fmt(a.atr*1.5,stellen)}</div></div></div>
+  <div class="zonen">${(a.widerstaende||[]).slice().reverse().map(([p,n])=>`<div class="rot">R ${fmt(p,stellen)} <span class="dim">· ${n}x berührt</span></div>`).join('')}
+    <div>► ${fmt(a.preis,stellen)} <span class="dim">aktuell</span></div>
+    ${(a.unterstuetzungen||[]).map(([p,n])=>`<div class="gruen">S ${fmt(p,stellen)} <span class="dim">· ${n}x berührt</span></div>`).join('')}
+    ${a.pivots?`<div class="dim" style="margin-top:4px">Pivots: S1 ${fmt(a.pivots.S1,stellen)} · PP ${fmt(a.pivots.PP,stellen)} · R1 ${fmt(a.pivots.R1,stellen)}</div>`:''}</div>`;
+}
+const ratingFarbe=w=>w==null?'var(--dim)':w>=.5?'#22e39a':w>=.1?'#7ee8b8':w>-.1?'var(--dim)':w>-.5?'#ff8ba0':'#ff4d6a';
+async function tvLaden(){
+  if(!symbol)return;const s=symbol;
+  let d;try{d=await holen(`/api/tradingview?symbol=${encodeURIComponent(s)}`)}catch(e){d={fehler:'keine Verbindung'}}
+  if(s!==symbol)return;
+  if(d.fehler){$('tv-ratings').innerHTML=`<div class="leer" style="grid-column:1/-1">${esc(d.fehler)}</div>`;return}
+  $('tv-ratings').innerHTML=Object.entries(d.zeitrahmen).map(([t,w])=>`<div class="tv-zelle" style="border-color:${ratingFarbe(w.gesamt)}55">
+    <div class="l">${t}</div><div class="w" style="color:${ratingFarbe(w.gesamt)}">${esc(w.text)}</div></div>`).join('');
+}
+
+/* ================= Konto ================= */
+async function kontoLaden(){
+  let d;try{d=await holen('/api/konto')}catch(e){return}
+  if(d.fehler){positionen=[];$('ampel').textContent='';$('ampel-pille').textContent='FTMO –';
+    $('konto').innerHTML=`<div class="kacheln3"><div class="kachel"><div class="l">BALANCE</div><div class="w">–</div></div><div class="kachel"><div class="l">EQUITY</div><div class="w">–</div></div><div class="kachel"><div class="l">HEUTE</div><div class="w">–</div></div></div>
+      <div class="leer" style="margin-top:8px">${esc(d.fehler)}</div>`;return}
+  const k=d.konto,p=d.pruefung,r=d.regeln,farbe={'grün':'var(--green)','gelb':'var(--amber)','rot':'var(--red)'}[p.ampel];
+  positionen=k.positionen;
+  $('ampel').innerHTML=`<span class="ampel" style="color:${farbe}">${p.ampel.toUpperCase()}</span>`;
+  $('ampel-pille').innerHTML=`<i class="punkt" style="background:${farbe};box-shadow:0 0 8px ${farbe}"></i> FTMO ${p.ampel.toUpperCase()}`;
+  const ziel=Math.max(0,Math.min(100,p.fortschritt_ziel_prozent)),tagMax=r.kontogroesse*r.sicher_tag/100;
+  const tag=Math.max(0,Math.min(100,(tagMax-p.rest_tagesverlust_sicher)/tagMax*100));
+  $('konto').innerHTML=`<div class="kacheln3">
+    <div class="kachel"><div class="l">BALANCE</div><div class="w">${fmt(k.balance,0)}</div></div>
+    <div class="kachel"><div class="l">EQUITY</div><div class="w">${fmt(k.equity,0)}</div></div>
+    <div class="kachel"><div class="l">HEUTE</div><div class="w ${p.gewinn_heute>=0?'gruen':'rot'}">${p.gewinn_heute>=0?'+':''}${fmt(p.gewinn_heute,0)}</div></div></div>
+    <div class="zeile" style="margin-top:8px"><span>Ziel +${r.ziel} %</span><span class="zahl">${fmt(ziel,0)} %</span></div>
+    <div class="balken"><i style="width:${ziel}%;background:var(--green)"></i></div>
+    <div class="zeile"><span>Eigenes Tageslimit ${r.sicher_tag} %</span><span class="zahl">noch ${fmt(p.rest_tagesverlust_sicher,0)}</span></div>
+    <div class="balken"><i style="width:${tag}%;background:${farbe}"></i></div>
+    <div class="zeile"><span>Luft FTMO gesamt</span><span class="zahl">${fmt(p.rest_gesamtverlust,0)}</span></div>
+    ${k.positionen.map(x=>`<div class="zeile" style="border-top:1px solid var(--line);margin-top:4px;padding-top:6px"><span>${esc(x.symbol)} ${x.richtung==='Kauf'?'<b class="gruen">LONG</b>':'<b class="rot">SHORT</b>'} ${x.volumen}${x.sl?'':' <b class="rot">⚠ KEIN SL</b>'}</span><b class="zahl ${x.gewinn>=0?'gruen':'rot'}">${fmt(x.gewinn)}</b></div>`).join('')}`;
+}
+
+/* ================= Watchlist & Laufleiste ================= */
+const pfeil=t=>!t?'·':t.startsWith('Auf')?'<span class="gruen">▲</span>':t.startsWith('Ab')?'<span class="rot">▼</span>':'<span class="amber">▬</span>';
+function watchlistZeigen(){
+  if(!ueberblickDaten.length)return;
+  $('watchlist').innerHTML=ueberblickDaten.map(m=>m.fehler?`<div class="liste-zeile" style="cursor:default"><span class="n">${esc(m.name)}</span><span class="u" style="grid-column:2/4">${esc(m.fehler.slice(0,50))}</span></div>`:
+    `<button class="liste-zeile ${m.name===symbol?'aktiv':''}" data-s="${esc(m.name)}"><span><span class="n">${esc(m.name)}</span><br><span class="u">M15 ${pfeil(m.trend)} H1 ${pfeil(m.trend_h1)} · RSI ${fmt(m.rsi,0)}</span></span>
+      <span class="zahl">${fmt(m.preis,m.stellen)}</span><span class="zahl ${m.prozent>=0?'gruen':'rot'}" style="min-width:62px;text-align:right">${m.prozent>=0?'+':''}${fmt(m.prozent,2)}%</span></button>`).join('');
+}
+$('watchlist').onclick=e=>{const b=e.target.closest('[data-s]');if(b)waehle(b.dataset.s)};
+let kryptoDaten=[];
+function laufleisteZeigen(){
+  const teile=ueberblickDaten.filter(m=>!m.fehler).map(m=>[m.name,fmt(m.preis,m.stellen),m.prozent])
+    .concat(kryptoDaten.filter(k=>!ueberblickDaten.some(m=>norm(m.name).startsWith(k.coin))).map(k=>[k.coin,fmt(k.preis,k.preis<10?3:2),k.prozent]));
+  $('laufleiste').innerHTML=teile.map(([n,p,c])=>`<span class="t" data-s="${esc(n)}"><b>${esc(n)}</b> ${p} <span class="${c>=0?'gruen':'rot'}">${c>=0?'▲':'▼'} ${fmt(Math.abs(c),2)}%</span></span>`).join('');
+}
+$('laufleiste').onclick=e=>{const b=e.target.closest('[data-s]');if(b)waehle(b.dataset.s)};
+async function ueberblickLaden(){try{const d=await holen('/api/ueberblick');if(!d.fehler){ueberblickDaten=d.maerkte;watchlistZeigen();laufleisteZeigen()}}catch(e){}}
+async function kryptoLaden(){try{const d=await holen('/api/krypto');if(!d.fehler){kryptoDaten=d.kurse;laufleisteZeigen()}}catch(e){}}
+
+/* ================= Setup-Scanner ================= */
+let setupDaten=[];
+async function setupsLaden(){
+  $('setup-zeit').textContent='scanne …';
+  let d;try{d=await holen(`/api/setups?tf=M15`)}catch(e){return}
+  if(d.fehler){$('setups').innerHTML=`<div class="leer">${esc(d.fehler)}</div>`;return}
+  setupDaten=d.maerkte;$('setup-zeit').textContent=new Date(d.zeit*1000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  $('setups').innerHTML=setupDaten.map((m,i)=>{
+    if(m.fehler)return`<div class="setup-zeile" style="cursor:default"><div class="k"><b>${esc(m.name)}</b><span class="dim mono" style="font-size:11px">keine Daten</span></div></div>`;
+    const s=m.setup,f=x=>fmt(x,m.stellen);
+    return s?`<button class="setup-zeile" data-i="${i}"><div class="k"><b>${esc(m.name)}</b><span class="badge ${s.richtung==='LONG'?'gruen':'rot'}">${s.richtung} · CRV ${fmt(s.crv,1)}</span></div>
+      <div class="d">Einstieg ${f(s.einstieg)} · SL <span class="rot">${f(s.stop)}</span> · Ziel <span class="gruen">${f(s.ziel)}</span></div></button>`:
+      `<button class="setup-zeile" data-i="${i}"><div class="k"><b>${esc(m.name)}</b><span class="badge dim">kein Setup</span></div><div class="d">${esc(m.grund||'')}</div></button>`}).join('');
+}
+$('setups').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const m=setupDaten[+b.dataset.i];waehle(m.name);
+  if(m.setup){$('r-einstieg').value=+m.setup.einstieg.toFixed(m.stellen);$('r-stop').value=+m.setup.stop.toFixed(m.stellen);$('r-richtung').value=m.setup.richtung;rechnen()}};
+$('setup-neu').onclick=setupsLaden;
+
+/* ================= Positionsrechner ================= */
+$('r-einstieg').oninput=()=>{$('r-einstieg').dataset.manuell='1'};
+async function rechnen(e){
+  if(e)e.preventDefault();
+  const ein=$('r-einstieg').value||(analyseDaten?analyseDaten.analyse.preis:''),stop=$('r-stop').value;
+  if(!ein||!stop){$('r-ergebnis').innerHTML='<div class="leer" style="margin-top:8px">Einstieg und Stop-Loss eintragen.</div>';return}
+  const d=await holen(`/api/positionsgroesse?symbol=${encodeURIComponent(symbol)}&einstieg=${ein}&stop=${stop}&risiko=${$('r-risiko').value}`);
+  if(d.fehler){$('r-ergebnis').innerHTML=`<div class="leer" style="margin-top:8px">${esc(d.fehler)}</div>`;return}
+  const richtung=$('r-richtung').value,dist=Math.abs(ein-stop),ziel2=richtung==='LONG'?+ein+2*dist:+ein-2*dist;
+  $('r-ergebnis').innerHTML=`<div class="ergebnis">${d.lots!=null?`<b>${fmt(d.lots,2)} Lot</b><br>`:'<b>Lots: MT5 nötig</b><br>'}
+    Risiko ${fmt(d.risiko_betrag)} (${d.risiko_prozent} % von ${fmt(d.konto,0)})<br>
+    <span class="dim">Ziel bei CRV 2: <span class="zahl gruen">${fmt(ziel2,stellen)}</span> · ${esc(d.quelle||d.konto_quelle)}</span></div>`;
+}
+$('rechner').onsubmit=rechnen;
+
+/* ================= News ================= */
+async function kalenderLaden(){
+  let d;try{d=await holen('/api/kalender')}catch(e){return}
+  if(d.fehler){$('news').innerHTML=`<div class="leer">${esc(d.fehler)}</div>`;return}
+  kalenderDaten=d.termine;newsZeigen();
+}
+function newsZeigen(){
+  const jetzt=Date.now()/1000;
+  if(!kalenderDaten.length){$('news').innerHTML='<div class="leer">Keine wichtigen News heute und morgen.</div>';return}
+  $('news-zahl').textContent=kalenderDaten.filter(e=>e.wichtig==='HOCH'&&e.zeit>jetzt).length+' WICHTIG';
+  $('news').innerHTML=kalenderDaten.map(e=>{const d=new Date(e.zeit*1000),bis=(e.zeit-jetzt)/60;
+    return`<div class="news ${bis<-5?'vorbei':''} ${bis>=0&&bis<=30&&e.wichtig==='HOCH'?'bald':''}">
+      <span class="zeit">${d.toLocaleDateString('de-DE',{weekday:'short'})}<br>${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</span>
+      <span class="w">${esc(e.waehrung)}</span>
+      <span><i class="imp" style="background:${e.wichtig==='HOCH'?'var(--red)':'var(--amber)'}"></i>${esc(e.titel)}<br><span class="dim mono" style="font-size:11px">Prognose ${esc(e.prognose)} · vorher ${esc(e.vorher)}</span></span></div>`}).join('');
+}
+function newsCountdown(){
+  const jetzt=Date.now()/1000,n=kalenderDaten.find(e=>e.wichtig==='HOCH'&&e.zeit>jetzt-60);
+  if(!n){$('news-pille').textContent='NEWS · keine';return}
+  const s=Math.max(0,n.zeit-jetzt),h=Math.floor(s/3600),m=Math.floor(s%3600/60),sek=Math.floor(s%60);
+  const bald=s<1800;$('news-pille').innerHTML=`<i class="punkt" style="background:${bald?'var(--red)':'var(--amber)'}"></i> ${esc(n.waehrung)} ${esc(n.titel.slice(0,22))} · ${h?h+'h ':''}${m}m${bald?' '+sek+'s':''}`;
+  $('news-pille').style.borderColor=bald?'var(--red)':'';
+}
+
+/* ================= Alarme ================= */
+async function alarmeLaden(){
+  let d;try{d=await holen('/api/alarme')}catch(e){return}
+  $('alarm-zahl').textContent=d.alarme.length?d.alarme.length+' AKTIV':'';
+  $('alarme').innerHTML=d.alarme.length?d.alarme.map(a=>`<div class="alarm"><span>${esc(a.text.replace(/^ID \d+: /,''))}</span><button data-id="${a.id}" aria-label="Alarm löschen">✕</button></div>`).join(''):'<div class="leer">Keine Alarme. Jarvis meldet sich mit Stimme, sobald einer auslöst.</div>';
+}
+$('alarme').onclick=e=>{const id=e.target.dataset?.id;if(id)senden('/api/alarm_loeschen',{id:+id}).then(alarmeLaden)};
+$('a-art').onchange=()=>{$('a-wert').disabled=$('a-art').value==='setup'};
+$('alarm-form').onsubmit=async e=>{e.preventDefault();
+  const d=await senden('/api/alarm',{symbol,art:$('a-art').value,wert:$('a-wert').value,zeitrahmen:tf});
+  if(d.fehler){$('alarme').insertAdjacentHTML('afterbegin',`<div class="leer rot">${esc(d.fehler)}</div>`);return}
+  $('a-wert').value='';alarmeLaden()};
+
+/* ================= Hyperliquid-Profis ================= */
+async function profisLaden(){
+  let d;try{d=await holen('/api/briefing')}catch(e){return}
+  $('profis').innerHTML=d.fehler?'<div class="leer">Noch kein Bericht verfügbar.</div>':
+    (d.einig.length?d.einig.map(z=>`<div style="padding:4px 0;font-size:13.5px" class="${z.includes('KAUFEN')?'gruen':'rot'}">${esc(z)}</div>`).join(''):'<div class="leer">Heute keine klare Einigkeit.</div>');
+}
+
+/* ================= Meldungen & Tagebuch ================= */
+function reiter(welcher){$('tab-meldungen').setAttribute('aria-selected',welcher==='m');$('tab-tagebuch').setAttribute('aria-selected',welcher==='t');
+  $('meldungen').hidden=welcher!=='m';$('tagebuch').hidden=welcher!=='t';if(welcher==='t')tagebuchLaden()}
+$('tab-meldungen').onclick=()=>reiter('m');$('tab-tagebuch').onclick=()=>reiter('t');
+const vor=s=>{const m=Math.round((Date.now()/1000-s)/60);return m<1?'jetzt':m<60?`vor ${m} min`:`vor ${Math.round(m/60)} h`};
+function meldungenZeigen(z){
+  const liste=z.meldungen.map(m=>`<div class="meldung"><span>${m.kategorie==='news'?'📰':m.kategorie==='konto'?'🛡':m.kategorie==='termin'?'⏰':m.kategorie==='markt'?'📊':m.kategorie==='update'?'⬆':'🔔'}</span>
+    <span><b>${esc(m.titel)}</b>${m.text?`<br><span class="dim" style="font-size:12px">${esc(m.text)}</span>`:''}<br><span class="dim mono" style="font-size:10.5px">${vor(m.zeit)}</span></span>
+    <button class="x" data-id="${m.id}" aria-label="Quittieren">✕</button></div>`).join('');
+  const termine=z.termine.map(e=>`<div class="meldung"><span>📅</span><span>${esc(e.text)}<br><span class="dim mono" style="font-size:11px">${e.zeit.slice(8,10)}.${e.zeit.slice(5,7)}. ${e.zeit.slice(11,16)}</span></span></div>`).join('');
+  $('meldungen').innerHTML=(liste||'')+(termine||'')||'<div class="leer">Alles ruhig. Jarvis meldet News, Alarme und Konto-Warnungen hier.</div>';
+  $('meldung-zahl').textContent=z.meldungen.length?z.meldungen.length+' NEU':'';
+}
+$('meldungen').onclick=e=>{const id=e.target.dataset?.id;if(id)senden('/api/quittieren',{id:+id})};
+async function tagebuchLaden(){
+  let d;try{d=await holen('/api/tagebuch?tage=30')}catch(e){return}
+  const a=d.auswertung;
+  $('tagebuch').innerHTML=`<div class="kacheln3" style="margin-bottom:8px">
+    <div class="kachel"><div class="l">TRADES</div><div class="w">${a.trades}</div></div>
+    <div class="kachel"><div class="l">TREFFER</div><div class="w">${a.trefferquote==null?'–':fmt(a.trefferquote*100,0)+'%'}</div></div>
+    <div class="kachel"><div class="l">ERGEBNIS</div><div class="w ${(a.summe_r||0)>=0?'gruen':'rot'}">${a.summe_r==null?'–':(a.summe_r>=0?'+':'')+fmt(a.summe_r,1)+' R'}</div></div></div>
+    ${d.eintraege.map(e=>`<div class="meldung"><span>${e.richtung==='LONG'?'<b class="gruen">L</b>':'<b class="rot">S</b>'}</span><span><b>${esc(e.symbol)}</b> ${e.r!=null?`<span class="${e.r>=0?'gruen':'rot'} zahl">${e.r>=0?'+':''}${fmt(e.r,2)} R</span>`:''} ${e.gewinn!=null?`<span class="zahl ${e.gewinn>=0?'gruen':'rot'}">${fmt(e.gewinn)}</span>`:''}<br>
+      <span class="dim" style="font-size:12px">${esc(e.zeit.replace('T',' '))} ${esc(e.notiz||'')}</span></span></div>`).join('')||'<div class="leer">Noch keine Trades. Sag z. B. „Jarvis, trag ein: Gold long bei 4120, Stop 4110, raus bei 4135“.</div>'}`;
+}
+
+/* ================= Jarvis: Zustand, Dialog, Freigabe, Chart-Befehle ================= */
+let modus='bereit',mikroAn=true,dialogSchl='';
+const MODUS_TEXT={bereit:'BEREIT',hoert:'HÖRT ZU',denkt:'DENKT …',spricht:'SPRICHT',wartet:'FREIGABE?'};
+async function zustandLaden(){
+  let z;try{z=await holen('/api/zustand')}catch(e){$('modus-text').textContent='OFFLINE';modus='offline';return}
+  modus=z.modus;mikroAn=z.mikro_an;$('modus-text').textContent=MODUS_TEXT[modus]||modus.toUpperCase();
+  $('mikro').textContent=mikroAn?'🎙 MIKRO AN':'🎙 MIKRO AUS';$('mikro').title=z.mikro_fehler||'';
+  const s=JSON.stringify(z.dialog);
+  if(s!==dialogSchl){dialogSchl=s;$('dialog').innerHTML=z.dialog.map(e=>`<div class="blase ${e.wer==='du'?'du':'jarvis'}"><span class="z">${e.wer==='du'?'DU':'JARVIS'} · ${esc(e.zeit)}</span>${esc(e.text)}</div>`).join('');$('dialog').scrollTop=1e9}
+  const f=z.freigabe;$('freigabe').hidden=!f;
+  if(f&&$('freigabe').dataset.id!==String(f.id)){$('freigabe').dataset.id=f.id;$('fg-titel').textContent=f.beschreibung;$('fg-details').textContent=f.details;$('fg-ja').focus()}
+  const befehlId=z.chart_befehl?z.chart_befehl.id:0;
+  if(ersterZustand){ersterZustand=false;letzterChartBefehl=befehlId}
+  else if(befehlId!==letzterChartBefehl){letzterChartBefehl=befehlId;if(symbol)waehle(z.chart_befehl.symbol,z.chart_befehl.zeitrahmen)}
+  meldungenZeigen(z);
+}
+$('fg-ja').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:true});
+$('fg-nein').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:false});
+$('mikro').onclick=()=>senden('/api/mikro',{an:!mikroAn}).then(zustandLaden);
+const fragen=t=>senden('/api/frage',{text:t}).then(zustandLaden);
+$('eingabe').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(t){$('frage').value='';fragen(t)}};
+const VORLAGEN={
+  analyse:()=>`Analysiere ${symbol} auf ${tf} für Daytrading: Trend, wichtige Zonen, TradingView-Rating und ob es ein Setup gibt – mit Einstieg, Stop-Loss, Ziel und Chance-Risiko. Kurz.`,
+  setup:()=>`Gibt es gerade ein Daytrading-Setup in meinen Märkten? Prüf Setup-Scanner, TradingView und News und nenn mir das beste mit Einstieg, Stop, Ziel und Lotgröße für ${E.risiko} % Risiko.`,
+  ansehen:()=>`Schau dir meinen Chart auf dem Bildschirm an und sag mir, was du siehst: Trend, eingezeichnete Linien, Muster und ob ein Einstieg Sinn macht.`,
+  news:()=>`Welche wichtigen News kommen heute und morgen, und worauf muss ich beim Daytrading achten?`,
+  konto:()=>`Wie steht mein FTMO-Konto, und wie viel Luft habe ich heute noch?`,
+  tagebuch:()=>`Werte mein Trading-Tagebuch der letzten 7 Tage aus und sag mir ehrlich, was ich besser machen kann.`};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-frage]');if(b&&VORLAGEN[b.dataset.frage])fragen(VORLAGEN[b.dataset.frage]())});
+
+/* ================= Orb-Animation ================= */
+const ORB_FARBE={bereit:[34,211,238],hoert:[34,227,154],denkt:[251,191,36],spricht:[120,232,255],wartet:[255,77,106],offline:[93,108,136]};
+let farbe=[34,211,238];const ox=$('orb').getContext('2d'),ruhig=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function orb(t){
+  const W=236,M=W/2,s=ruhig?0:t/1000,ziel=ORB_FARBE[modus]||ORB_FARBE.bereit;farbe=farbe.map((c,i)=>c+(ziel[i]-c)*.08);
+  const [r,g,b]=farbe.map(Math.round),c=a=>`rgba(${r},${g},${b},${a})`,tempo={denkt:2.2,spricht:1,hoert:.8,wartet:.3}[modus]||.35;
+  const puls=modus==='spricht'?.5+.5*Math.abs(Math.sin(s*9)):modus==='hoert'?.5+.5*Math.sin(s*4):.6+.12*Math.sin(s*1.6);
+  ox.clearRect(0,0,W,W);ox.lineCap='round';
+  [[.92,2,-.5],[.78,5,.8],[.64,2,-1.2]].forEach(([f,lw,d],k)=>{ox.lineWidth=lw;ox.strokeStyle=c(.3+.35*puls);
+    for(let i=0;i<3+k;i++){const a=i*2*Math.PI/(3+k)+s*d*tempo;ox.beginPath();ox.arc(M,M,M*f,a,a+.7);ox.stroke()}});
+  const gr=ox.createRadialGradient(M,M,0,M,M,M*.55);gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.25,c(.9));gr.addColorStop(.7,c(.15));gr.addColorStop(1,c(0));
+  ox.fillStyle=gr;ox.beginPath();ox.arc(M,M,M*(.42+.06*puls),0,7);ox.fill();
+  requestAnimationFrame(orb);
+}
+requestAnimationFrame(orb);
+
+/* ================= Start ================= */
+holen('/api/einstellungen').then(e=>{
+  E=e;$('watch-tf').textContent=e.zeitrahmen;$('r-risiko').value=e.risiko;
+  if(!speicher.tf)tf=e.zeitrahmen;
+  const start=speicher.symbol&&(e.maerkte.includes(speicher.symbol)||e.alle_tradingview[norm(speicher.symbol)])?speicher.symbol:e.maerkte[0];
+  ansichtSetzen(ansicht==='eigen'?'eigen':'tv');waehle(start,tf);
+}).catch(()=>{$('chart-meldung').hidden=false;$('chart-meldung').textContent='Keine Verbindung zu Jarvis – läuft das schwarze Fenster?'});
+
+uhrTick();
+setInterval(()=>chartDatenLaden(false),3000);
+zustandLaden();setInterval(zustandLaden,1000);
+kontoLaden();setInterval(kontoLaden,3000);
+ueberblickLaden();setInterval(ueberblickLaden,20000);
+kryptoLaden();setInterval(kryptoLaden,20000);
+setTimeout(setupsLaden,1500);setInterval(setupsLaden,120000);
+kalenderLaden();setInterval(kalenderLaden,300000);setInterval(newsZeigen,30000);
+alarmeLaden();setInterval(alarmeLaden,10000);
+profisLaden();setInterval(profisLaden,900000);
+setInterval(()=>symbol&&tvLaden(),60000);
+setInterval(()=>{if(!$('tagebuch').hidden)tagebuchLaden()},60000);
+</script>
+</body>
+</html>

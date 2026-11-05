@@ -4,3 +4,4 @@ pyaudio>=0.2.14
 psutil>=5.9
 MetaTrader5>=5.0.45; sys_platform == "win32"
 tzdata>=2024.1
+pillow>=10.0

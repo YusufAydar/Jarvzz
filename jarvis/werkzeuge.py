@@ -185,6 +185,73 @@ WERKZEUG_BESCHREIBUNGEN = [
         },
     },
     {
+        "name": "chart_zeigen",
+        "description": "Zeigt einen Markt im Live-Chart der Jarvis-Zentrale an (TradingView-Chart in der Mitte). "
+                       "Benutze das IMMER, wenn der Nutzer einen Chart sehen will ('zeig mir Gold', 'DAX auf H1') – "
+                       "nicht den Browser. Geht für alle Märkte, auch Aktien im Format 'BÖRSE:SYMBOL'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "z. B. 'XAUUSD', 'DAX', 'NASDAQ:AAPL'"},
+                "zeitrahmen": {"type": "string", "enum": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"]},
+            },
+            "required": ["symbol"],
+        },
+    },
+    {
+        "name": "bildschirm_ansehen",
+        "description": "Macht einen Screenshot des Bildschirms und zeigt ihn dir, damit du sehen kannst, was der "
+                       "Nutzer sieht – z. B. seinen TradingView-Chart mit eingezeichneten Linien, Mustern und "
+                       "Indikatoren. Nur benutzen, wenn der Nutzer dich bittet, etwas anzusehen "
+                       "('schau dir meinen Chart an', 'was siehst du').",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "tagebuch_eintragen",
+        "description": "Trägt einen Trade ins Trading-Tagebuch ein. Mit Einstieg, Stop und Ausstieg wird das "
+                       "Ergebnis in R (Vielfache des Risikos) automatisch berechnet.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string"}, "richtung": {"type": "string", "enum": ["LONG", "SHORT"]},
+                "einstieg": {"type": "number"}, "stop": {"type": "number"}, "ausstieg": {"type": "number"},
+                "gewinn": {"type": "number", "description": "Gewinn/Verlust in Kontowährung (negativ = Verlust)"},
+                "setup": {"type": "string", "description": "z. B. 'Pullback EMA20'"},
+                "notiz": {"type": "string", "description": "Gedanken, Fehler, Gefühl"},
+            },
+            "required": ["symbol", "richtung"],
+        },
+    },
+    {
+        "name": "tagebuch_auswertung",
+        "description": "Wertet das Trading-Tagebuch aus: Trefferquote, Ergebnis in R, Gewinn, pro Markt; "
+                       "und listet die letzten Trades. Für 'Wie lief meine Woche?' oder 'Was mache ich falsch?'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"tage": {"type": "integer", "description": "Zeitraum in Tagen, Standard 30"}},
+        },
+    },
+    {
+        "name": "an_claude_melden",
+        "description": "Meldet Claude (deinem Entwickler in Claude Code) deine EIGENEN Änderungen: selbst "
+                       "geänderte Programmdateien, selbstgebaute Werkzeuge und Einstellungen werden mit deiner "
+                       "Nachricht in den GitHub-Zweig 'jarvis-pc' hochgeladen. Benutze das, nachdem du dich "
+                       "selbst verändert hast, oder wenn der Nutzer sagt 'sag Claude Bescheid'. Der Nutzer "
+                       "bestätigt das Hochladen.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"nachricht": {"type": "string",
+                                         "description": "Was du geändert hast und warum – für Claude"}},
+            "required": ["nachricht"],
+        },
+    },
+    {
+        "name": "neuigkeiten",
+        "description": "Zeigt, was Claude zuletzt an dir verbessert hat (NEUIGKEITEN.md) und prüft, ob auf "
+                       "GitHub ein neues Update wartet. Für 'Was ist neu?' oder 'Gibt es ein Update?'.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
         "name": "mt5_zugang_speichern",
         "description": "Speichert die MetaTrader-5-Zugangsdaten (z. B. FTMO) dauerhaft in Jarvis' .env-Datei "
                        "und testet sofort die Verbindung. Benutze das, wenn der Nutzer dir Login, Passwort und "
@@ -489,6 +556,89 @@ class Werkzeugkasten:
             return "Gelöscht." if self._alarme().loeschen(loeschen_id) else f"Keinen Alarm mit ID {loeschen_id}."
         aktiv = self._alarme().aktive()
         return "\n".join(self._alarme().beschreibung(a) for a in aktiv) if aktiv else "Keine aktiven Alarme."
+
+    def _an_claude_melden(self, nachricht):
+        import sync
+        dateien, uebersprungen = sync.lokale_aenderungen()
+        liste = "\n".join(f"{d['status']}: {d['pfad']}" for d in dateien) or "(keine geänderten Dateien – nur die Nachricht)"
+        if not self.bestaetigen("sync", "Meine Änderungen an Claude melden (GitHub-Zweig jarvis-pc)",
+                                f"Nachricht: {nachricht}\n\nDiese Dateien werden hochgeladen:\n{liste}\n\n"
+                                "Nie hochgeladen: .env (Schlüssel), daten/ (Termine, Tagebuch).\n"
+                                "Achtung: Ist das Repository öffentlich, kann jeder diese Dateien sehen."):
+            return "Der Nutzer hat das Hochladen abgelehnt."
+        try:
+            r = sync.hochladen(nachricht, dateien=dateien, uebersprungen=uebersprungen)
+        except sync.SyncFehler as fehler:
+            return f"Hochladen fehlgeschlagen: {fehler}"
+        text = f"An Claude gemeldet (Commit {r['commit']}): {len(r['dateien'])} Datei(en)."
+        if r["uebersprungen"]:
+            text += " Nicht hochgeladen: " + ", ".join(f"{p} ({g})" for p, g in r["uebersprungen"])
+        return text
+
+    def _neuigkeiten(self):
+        import sync
+        lokal = sync.neuigkeiten_lokal()[:5]
+        text = "Zuletzt von Claude geändert:\n" + "\n".join(
+            f"- {e['kopf']}: {' '.join(e['text'].split())[:300]}" for e in lokal) if lokal else "Keine Neuigkeiten-Datei."
+        try:
+            neu = sync.update_pruefen()
+            text += ("\n\nUPDATE VERFÜGBAR:\n" + "\n".join(f"- {e['kopf']}" for e in neu)
+                     + "\n(Mit 'Jarvis, aktualisiere dich' installieren.)") if neu else "\n\nDu bist auf dem neuesten Stand."
+        except Exception as fehler:
+            text += f"\n\nUpdate-Prüfung nicht möglich: {fehler}"
+        return text
+
+    def ui_befehl(self, befehl):
+        """Schickt einen Befehl an die Oberfläche. Die Zentrale ersetzt das durch ihre eigene Funktion."""
+        return False
+
+    def _chart_zeigen(self, symbol, zeitrahmen=None):
+        zeitrahmen = (zeitrahmen or einstellungen.TRADING_ZEITRAHMEN).upper()
+        if self.ui_befehl({"aktion": "chart", "symbol": symbol, "zeitrahmen": zeitrahmen}):
+            return f"Der Chart zeigt jetzt {symbol} auf {zeitrahmen}."
+        return ("Die Jarvis-Zentrale ist gerade nicht geöffnet, deshalb kann ich den Chart nicht anzeigen. "
+                "Starte Jarvis mit jarvis_zentrale.")
+
+    def _bildschirm_ansehen(self):
+        try:
+            from PIL import ImageGrab
+        except ImportError:
+            return "Für Screenshots fehlt das Paket Pillow (aktualisieren.bat ausführen)."
+        if not IST_WINDOWS:
+            return "Screenshots gehen nur unter Windows."
+        import base64
+        import io
+        bild = ImageGrab.grab(all_screens=False).convert("RGB")
+        bild.thumbnail((1568, 1568))  # größer bringt Claude nichts, kostet nur mehr
+        puffer = io.BytesIO()
+        bild.save(puffer, format="JPEG", quality=80)
+        return {"text": f"Screenshot des Bildschirms ({bild.width}x{bild.height}).",
+                "bild": base64.b64encode(puffer.getvalue()).decode(), "media_type": "image/jpeg"}
+
+    def _tagebuch(self):
+        if getattr(self, "_tagebuch_objekt", None) is None:
+            from trading.tagebuch import Tagebuch
+            self._tagebuch_objekt = Tagebuch(einstellungen.DATEN_ORDNER / "tagebuch.json")
+        return self._tagebuch_objekt
+
+    def _tagebuch_eintragen(self, symbol, richtung, einstieg=None, stop=None, ausstieg=None, gewinn=None,
+                            setup="", notiz=""):
+        e = self._tagebuch().eintragen(symbol, richtung, einstieg, stop, ausstieg, gewinn, notiz, setup)
+        ergebnis = f", Ergebnis {e['r']:+.2f} R" if e["r"] is not None else ""
+        return f"Eingetragen (Nr. {e['id']}): {e['symbol']} {e['richtung']}{ergebnis}."
+
+    def _tagebuch_auswertung(self, tage=30):
+        from trading.tagebuch import auswertung_text
+        tb = self._tagebuch()
+        text = auswertung_text(tb.auswertung(tage))
+        letzte = tb.liste(tage)[-8:]
+        if letzte:
+            text += "\nLetzte Trades:\n" + "\n".join(
+                f"{e['zeit'][:10]} {e['symbol']} {e['richtung']} "
+                + (f"{e['r']:+.2f} R " if e["r"] is not None else "")
+                + (f"{e['gewinn']:+.2f} " if e["gewinn"] is not None else "") + (e["notiz"] or "")
+                for e in letzte)
+        return text
 
     def _wirtschaftskalender(self, alle=False, waehrungen=None):
         from trading import kalender

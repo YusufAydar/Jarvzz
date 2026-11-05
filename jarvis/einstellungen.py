@@ -74,6 +74,15 @@ FTMO_GEWINNZIEL = 10
 # Unsere eigene, strengere Grenze: ab diesem Tagesverlust (in %) wird für heute nicht mehr gehandelt
 SICHERHEIT_TAGESVERLUST = 3
 
+# Standard-Risiko pro Trade in Prozent (für Positionsrechner und Setup-Vorschläge)
+RISIKO_STANDARD_PROZENT = 0.5
+# News-Wächter: so viele Minuten vor wichtigen News warnt Jarvis (0 = aus) ...
+NEWS_WARNUNG_MINUTEN = 15
+# ... aber nur für diese Währungen (die deine Märkte bewegen)
+NEWS_WAEHRUNGEN = ["USD", "EUR", "GBP"]
+# Daytrading: um diese Uhrzeit erinnert Jarvis dich an offene Positionen ("" = aus)
+TAGESENDE_ERINNERUNG = "21:45"
+
 # ---------- Oberfläche (Dashboard) ----------
 # Für welchen Ort soll das Wetter angezeigt werden?
 WETTER_ORT = "Berlin"

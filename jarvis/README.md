@@ -53,7 +53,34 @@ Zum Beenden: **„Jarvis, beenden“** oder **Strg + C**.
 - **`jarvis_starten.bat`** doppelklicken: nur Sprache, im schwarzen Fenster.
 - **`jarvis_text.bat`** doppelklicken: Textmodus, du tippst statt zu sprechen. Gut für den ersten Test.
 
-### Die Oberfläche
+### 🚀 Die Trading-Zentrale (Haupt-Oberfläche)
+
+Start: **`jarvis_zentrale.bat`** (auch `jarvis_oberflaeche.bat` und deine Verknüpfung starten jetzt die Zentrale).
+
+| Bereich | Was es kann |
+|---|---|
+| **Live-Chart (Mitte)** | Echter **TradingView-Chart** mit allen Zeichenwerkzeugen. Umschaltbar auf den **Jarvis-Chart** mit Zonen, Pivots und deinen Positionen. Jarvis schaltet ihn per Sprache um: „Jarvis, zeig mir Gold auf H1“. |
+| **👁 Schau dir den Chart an** | Jarvis macht einen Screenshot und analysiert, was du in TradingView eingezeichnet hast. |
+| **FTMO-Konto** | Balance, Equity, Gewinn heute, Ampel, Ziel- und Tageslimit-Balken (mit MT5). |
+| **Watchlist & Laufleiste** | Kurse, Tagesveränderung, Trend M15/H1, RSI. Klick wählt den Markt. |
+| **Setup-Scanner** | Daytrading-Setups mit Einstieg, Stop, Ziel und CRV. Ein Klick füllt den Positionsrechner aus. |
+| **Positionsrechner** | Lotgröße für dein Risiko (Standard 0,5 %). |
+| **Analyse** | TradingView-Rating für M15, H1, H4 und D1 sowie Trend, RSI, MACD, ATR und Zonen. |
+| **News** | Wichtige Wirtschaftstermine mit Countdown. Jarvis **warnt 15 Minuten vorher** mit Stimme. |
+| **Alarme** | Preis, RSI oder Setup. Jarvis meldet sich von selbst. |
+| **Meldungen & Tagebuch** | Warnungen, Termine und dein Trading-Tagebuch mit Trefferquote und Ergebnis in R. |
+| **Wächter** | Warnung bei der FTMO-Ampel Gelb/Rot, Erinnerung an offene Positionen am Abend, Hinweis auf Updates. |
+
+Das alte Design startest du mit **`jarvis_altes_design.bat`**.
+
+### 🔗 Verbindung zwischen Jarvis und Claude
+
+- **Jarvis → Claude:** Wenn Jarvis sich selbst verändert (ein Werkzeug baut oder Dateien umbaut), meldet er es mit „an Claude melden“. Seine Änderungen landen mit Bericht im GitHub-Zweig `jarvis-pc`, und Claude liest sie vor jeder Änderung.
+- **Claude → Jarvis:** Jede Änderung von Claude steht in **`NEUIGKEITEN.md`**. Jarvis prüft regelmäßig auf Updates, meldet sich („Es gibt ein neues Update …“) und kennt danach seine neuen Fähigkeiten. Frag ihn: „Jarvis, was ist neu?“
+- **Einrichten (einmalig):** GitHub → Profilbild → *Settings* → *Developer settings* → *Personal access tokens* → *Fine-grained tokens* → *Generate new token*. Name z. B. „Jarvis“. Bei *Repository access* → *Only select repositories* → **Jarvzz**. Bei *Permissions* → *Contents* → **Read and write**. Den Token in die `.env` als `GITHUB_TOKEN=github_pat_...` eintragen.
+- Nie hochgeladen werden `.env` (Schlüssel), `daten/` (Termine, Tagebuch) und alles, was nach Passwort aussieht. Vor jedem Hochladen fragt Jarvis nach deiner Freigabe.
+
+### Die Oberfläche (altes Cockpit)
 
 | Feld | Was es zeigt |
 |---|---|
@@ -75,7 +102,11 @@ Mit der Leiste unten blendest du Felder ein und aus. Die Oberfläche läuft nur 
 
 | Datei | Wofür ist sie da? |
 |---|---|
-| `oberflaeche.py` | **Startpunkt mit Dashboard.** Kleiner Webserver nur auf deinem PC, liefert Wetter, Kurse, Systemwerte und leitet deine Befehle an Jarvis weiter. |
+| `zentrale.py` / `zentrale/index.html` | **Die Trading-Zentrale:** Server mit allen Daten und die Oberfläche mit Live-Chart. |
+| `sync.py` | **Verbindung zu Claude:** eigene Änderungen melden, Updates erkennen. |
+| `NEUIGKEITEN.md` | Was Claude zuletzt an Jarvis geändert hat. |
+| `jarvis_zentrale.bat` / `jarvis_altes_design.bat` | Doppelklicken: Zentrale starten / altes Design starten. |
+| `oberflaeche.py` | **Startpunkt mit Dashboard (alt).** Kleiner Webserver nur auf deinem PC, liefert Wetter, Kurse, Systemwerte und leitet deine Befehle an Jarvis weiter. |
 | `oberflaeche/index.html` | **Das Aussehen des Dashboards** (Reaktor-Animation, alle Felder). |
 | `jarvis_oberflaeche.bat` / `aktualisieren.bat` | Doppelklicken: Dashboard starten / nach einem Update neue Pakete installieren. |
 | `jarvis.py` | **Startpunkt.** Hört zu, erkennt „Jarvis“, gibt die Frage ans Gehirn und spricht die Antwort. |

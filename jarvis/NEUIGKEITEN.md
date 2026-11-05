@@ -1,0 +1,28 @@
+# Neuigkeiten – was Claude an Jarvis geändert hat
+
+Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub: Steht dort ein
+Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
+die neuesten Einträge (sie stehen in seiner Grundanweisung).
+
+## 2026-11-05 · Trading-Zentrale mit Live-TradingView-Chart und Verbindung zu Claude
+Neue Oberfläche „Jarvis Trading-Zentrale“ (jarvis_zentrale.bat, auch jarvis_oberflaeche.bat startet sie jetzt):
+echter TradingView-Chart in der Mitte (umschaltbar auf den eigenen Jarvis-Chart mit Zonen, Pivots, Positionen),
+FTMO-Konto, Watchlist, Setup-Scanner, Positionsrechner, TradingView-Ratings M15/H1/H4/D1, News mit Countdown,
+Alarme, Hyperliquid-Profis, Meldungen und Trading-Tagebuch. Neue Werkzeuge: chart_zeigen (Jarvis schaltet den
+Chart in der Zentrale um), bildschirm_ansehen (Jarvis sieht sich per Screenshot den Chart des Nutzers an),
+tagebuch_eintragen und tagebuch_auswertung, an_claude_melden (eigene Änderungen per GitHub an Claude melden),
+neuigkeiten (was ist neu, gibt es ein Update). Wächter im Hintergrund: Warnung 15 Minuten vor wichtigen News,
+FTMO-Ampel-Warnung, Erinnerung an offene Positionen am Abend, Update-Hinweis. Das alte Design startet mit
+jarvis_altes_design.bat.
+
+## 2026-11-05 · Trading-Werkzeuge: TradingView, Setup-Scanner, Alarme, News, Positionsgröße
+tradingview_analyse (TradingView-Ratings über mehrere Zeitrahmen), setup_scanner (regelbasierte Pullback-Setups
+mit Einstieg, Stop-Loss, Ziel, CRV), positionsgroesse_berechnen (Lots für festes Risiko), alarm_setzen und
+alarme_verwalten (Preis-, RSI- und Setup-Alarme mit Sprachmeldung), wirtschaftskalender (wichtige News).
+Kurse für Gold, Forex und Indizes kommen ohne MT5 von Yahoo Finance, Krypto von Hyperliquid.
+Der Updater sichert vorher alles und überschreibt keine selbst geänderten Dateien mehr (neue Version als .neu).
+
+## 2026-11-05 · Vollzugriff, eigene Werkzeuge, Auto-Update, MT5-Anbindung
+befehl_ausfuehren (PowerShell mit Freigabe), werkzeug_erstellen (Plugins in plugins/), jarvis_aktualisieren,
+mt5_zugang_speichern, markt_analyse, maerkte_ueberblick, konto_status (FTMO-Ampel und Grenzen).
+MT5 wird nur verbunden, wenn es schon geöffnet ist.
