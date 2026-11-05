@@ -22,7 +22,9 @@ WEBSUCHE_ERLAUBT = True
 # ---------- Stimme ----------
 WAKE_WORT = "jarvis"
 # So schreibt die Spracherkennung "Jarvis" manchmal falsch – zählt trotzdem:
-WAKE_WORT_VARIANTEN = ["jarvis", "javis", "jarvi", "dschawis", "tschawis", "jervis", "jarwis"]
+WAKE_WORT_VARIANTEN = ["jarvis", "javis", "jarvi", "dschawis", "tschawis", "jervis", "jarwis",
+                       "service", "servus", "travis", "charvis", "schavis", "jarviss", "garvis",
+                       "harvest", "jarwiss"]
 # Nach einer Antwort darfst du so viele Sekunden lang OHNE "Jarvis" nachfragen
 NACHFRAGE_SEKUNDEN = 10
 # Sprache für die Spracherkennung

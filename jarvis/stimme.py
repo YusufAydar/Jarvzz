@@ -72,7 +72,10 @@ class Ohr:
             with self.mikrofon as quelle:
                 audio = self.erkenner.listen(quelle, timeout=warten_sekunden,
                                              phrase_time_limit=max_satz_sekunden)
-            return self.erkenner.recognize_google(audio, language=einstellungen.SPRACHE)
+            # show_all=True: Google liefert alle Vorschläge statt nur des ersten
+            ergebnis = self.erkenner.recognize_google(audio, language=einstellungen.SPRACHE,
+                                                      show_all=True)
+            return bester_vorschlag(ergebnis)
         except self.sr.WaitTimeoutError:
             return None
         except self.sr.UnknownValueError:
@@ -80,6 +83,23 @@ class Ohr:
         except self.sr.RequestError as fehler:
             print(f"[Spracherkennung nicht erreichbar: {fehler}]")
             return None
+
+
+def bester_vorschlag(ergebnis):
+    """
+    Google gibt mehrere Vorschläge zurück, z. B. "Service wie spät ist es" und
+    "Jarvis wie spät ist es". Wir nehmen den ersten, der das Wake-Wort enthält,
+    sonst einfach den wahrscheinlichsten.
+    """
+    if not ergebnis or not isinstance(ergebnis, dict):
+        return None
+    vorschlaege = [v.get("transcript", "") for v in ergebnis.get("alternative", []) if v.get("transcript")]
+    if not vorschlaege:
+        return None
+    for v in vorschlaege:
+        if wake_wort_entfernen(v)[0]:
+            return v
+    return vorschlaege[0]
 
 
 def wake_wort_entfernen(text):

@@ -192,6 +192,14 @@ class TestWakeWort(unittest.TestCase):
                          (True, "Wie spät ist es"))
         self.assertEqual(stimme.wake_wort_entfernen("hey Jarvis"), (True, ""))
         self.assertEqual(stimme.wake_wort_entfernen("Mach mal Musik an")[0], False)
+        self.assertEqual(stimme.wake_wort_entfernen("Service mach lauter"), (True, "mach lauter"))
+
+    def test_bester_vorschlag(self):
+        ergebnis = {"alternative": [{"transcript": "Paris wie spät ist es"},
+                                    {"transcript": "Jarvis wie spät ist es"}]}
+        self.assertEqual(stimme.bester_vorschlag(ergebnis), "Jarvis wie spät ist es")
+        self.assertEqual(stimme.bester_vorschlag({"alternative": [{"transcript": "Hallo"}]}), "Hallo")
+        self.assertIsNone(stimme.bester_vorschlag([]))  # Google liefert [] bei Stille
 
 
 if __name__ == "__main__":
