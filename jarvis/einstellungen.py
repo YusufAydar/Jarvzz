@@ -46,6 +46,21 @@ HYPERLIQUID_BERICHT_LOKAL = PROJEKT_ORDNER / "berichte" / "aktuell.md"
 # Der tägliche Bericht, den die GitHub Action ins Repository speichert
 HYPERLIQUID_BERICHT_URL = "https://raw.githubusercontent.com/YusufAydar/Jarvzz/main/berichte/aktuell.md"
 
+# ---------- Trading (MetaTrader 5 / FTMO) ----------
+# Deine Märkte – so wie du sie aussprichst. Jarvis findet den genauen Namen beim Broker selbst
+# (bei FTMO z. B. "US30.cash").
+TRADING_MAERKTE = ["EURUSD", "XAUUSD", "US30", "US100", "GER40", "BTCUSD"]
+# Daytrading: Hauptzeitrahmen für Einstiege (H1 wird immer als Überblick dazugenommen)
+TRADING_ZEITRAHMEN = "M15"
+# Startgröße deines FTMO-Kontos in Kontowährung, z. B. 10000, 25000, 100000
+FTMO_KONTOGROESSE = 10000
+# FTMO-Regeln in Prozent der Kontogröße (bitte mit deinen Challenge-Bedingungen abgleichen!)
+FTMO_MAX_TAGESVERLUST = 5
+FTMO_MAX_GESAMTVERLUST = 10
+FTMO_GEWINNZIEL = 10
+# Unsere eigene, strengere Grenze: ab diesem Tagesverlust (in %) wird für heute nicht mehr gehandelt
+SICHERHEIT_TAGESVERLUST = 3
+
 # ---------- Oberfläche (Dashboard) ----------
 # Für welchen Ort soll das Wetter angezeigt werden?
 WETTER_ORT = "Berlin"

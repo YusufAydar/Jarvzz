@@ -83,6 +83,33 @@ WERKZEUG_BESCHREIBUNGEN = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "markt_analyse",
+        "description": "Technische Analyse eines Marktes aus MetaTrader 5 (FTMO-Konto): Trend auf dem "
+                       "Daytrading-Zeitrahmen und auf H1, EMA20/50, RSI, MACD, ATR, Unterstützungen, "
+                       "Widerstände und Tages-Pivots. Märkte z. B. EURUSD, Gold, US30, US100, DAX, BTCUSD.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "z. B. 'EURUSD', 'Gold', 'US30'"},
+                "zeitrahmen": {"type": "string", "enum": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
+                               "description": "Standard: Daytrading-Zeitrahmen aus den Einstellungen"},
+            },
+            "required": ["symbol"],
+        },
+    },
+    {
+        "name": "maerkte_ueberblick",
+        "description": "Kurzer Überblick über alle beobachteten Trading-Märkte: Preis, Trend, RSI. "
+                       "Für Fragen wie 'Wie sehen die Märkte aus?' oder 'Wo gibt es gerade ein Setup?'.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "konto_status",
+        "description": "Stand des MetaTrader-5/FTMO-Kontos: Balance, Equity, offene Positionen, Gewinn heute "
+                       "und wie viel Luft bis zu den FTMO-Verlustgrenzen und bis zum Gewinnziel bleibt.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
         "name": "programm_oeffnen",
         "description": "Öffnet ein Programm oder eine App, die auf dem PC installiert ist "
                        "(alles aus dem Startmenü, z. B. Discord, Steam, WhatsApp, Spotify, Word, "
@@ -229,6 +256,64 @@ class Werkzeugkasten:
                     return (f"Kein Hyperliquid-Bericht verfügbar ({fehler}). Der Bericht entsteht, "
                             "sobald die GitHub Action gelaufen ist oder 'python main.py' gestartet wurde.")
         return f"[Quelle: {quelle}]\n\n{text[:20000]}"
+
+    # ---------- Trading (nur lesen) ----------
+
+    def _markt_analyse(self, symbol, zeitrahmen=None):
+        from trading import indikatoren, mt5_verbindung as mt
+        zeitrahmen = (zeitrahmen or einstellungen.TRADING_ZEITRAHMEN).upper()
+        try:
+            sym, kerzen = mt.kerzen(symbol, zeitrahmen, 300)
+            _, kerzen_h1 = mt.kerzen(sym, "H1", 200) if zeitrahmen != "H1" else (sym, None)
+            _, tage = mt.kerzen(sym, "D1", 3)
+        except mt.MT5Fehler as fehler:
+            return f"MetaTrader 5: {fehler}"
+        a = indikatoren.analysiere(kerzen, kerzen_h1, vortag=tage[-2] if len(tage) >= 2 else None)
+        return indikatoren.zusammenfassung(sym, zeitrahmen, a, mt.nachkommastellen(sym))
+
+    def _maerkte_ueberblick(self):
+        from trading import indikatoren, mt5_verbindung as mt
+        zeilen = []
+        for name in einstellungen.TRADING_MAERKTE:
+            try:
+                sym, kerzen = mt.kerzen(name, einstellungen.TRADING_ZEITRAHMEN, 200)
+                _, h1 = mt.kerzen(sym, "H1", 200)
+            except mt.MT5Fehler as fehler:
+                zeilen.append(f"{name}: {fehler}")
+                continue
+            schluss = [k["close"] for k in kerzen]
+            r = indikatoren.rsi(schluss)[-1]
+            zeilen.append(f"{sym}: {schluss[-1]:.{mt.nachkommastellen(sym)}f} | "
+                          f"{einstellungen.TRADING_ZEITRAHMEN} {indikatoren.trend(kerzen)} | "
+                          f"H1 {indikatoren.trend(h1)} | RSI {r:.0f}")
+        return "\n".join(zeilen)
+
+    def _konto_status(self):
+        from trading import mt5_verbindung as mt
+        try:
+            konto = mt.kontostand()
+        except mt.MT5Fehler as fehler:
+            return f"MetaTrader 5: {fehler}"
+        groesse = einstellungen.FTMO_KONTOGROESSE
+        start = mt.tagesstart_balance(konto["balance"])
+        p = mt.ftmo_pruefung(konto, start, groesse)
+        w = konto["waehrung"]
+        zeilen = [
+            f"Konto {konto['login']} ({konto['server']}): Balance {konto['balance']:.2f} {w}, "
+            f"Equity {konto['equity']:.2f} {w}",
+            f"Heute: {p['gewinn_heute']:+.2f} {w} | Ampel: {p['ampel'].upper()}",
+            f"Luft bis eigene Tagesgrenze ({einstellungen.SICHERHEIT_TAGESVERLUST} %): "
+            f"{p['rest_tagesverlust_sicher']:.2f} {w}; bis FTMO-Tagesgrenze: {p['rest_tagesverlust_ftmo']:.2f} {w}",
+            f"Luft bis FTMO-Gesamtgrenze: {p['rest_gesamtverlust']:.2f} {w}",
+            f"Bis zum Gewinnziel: {p['bis_ziel']:.2f} {w} ({p['fortschritt_ziel_prozent']:.0f} % geschafft)",
+        ]
+        if konto["positionen"]:
+            zeilen.append("Offene Positionen: " + "; ".join(
+                f"{x['symbol']} {x['richtung']} {x['volumen']} Lot ab {x['einstieg']}, "
+                f"SL {x['sl'] or 'KEINER'}, Gewinn {x['gewinn']:+.2f}" for x in konto["positionen"]))
+        else:
+            zeilen.append("Keine offenen Positionen.")
+        return "\n".join(zeilen)
 
     # ---------- PC-Steuerung ----------
 
