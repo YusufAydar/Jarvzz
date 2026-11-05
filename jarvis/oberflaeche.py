@@ -400,6 +400,8 @@ def baue_handler(kalender, werkzeugkasten):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/javascript; charset=utf-8" if datei.suffix == ".js"
                                  else "text/html; charset=utf-8")
+                # Nie zwischenspeichern – sonst zeigt das Fenster nach einem Update die alte Seite
+                self.send_header("Cache-Control", "no-store")
                 self.send_header("Content-Length", str(len(inhalt)))
                 self.end_headers()
                 self.wfile.write(inhalt)
