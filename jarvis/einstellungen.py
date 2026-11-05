@@ -42,6 +42,11 @@ WAKE_WORT_VARIANTEN = ["jarvis", "javis", "jarvi", "dschawis", "tschawis", "jerv
 NACHFRAGE_SEKUNDEN = 10
 # Sprache für die Spracherkennung
 SPRACHE = "de-DE"
+# Unterbrechen: Sprichst du deutlich lauter als normal, während Jarvis redet, hört er auf (Idee von Jarvis).
+# Tipp: mit Kopfhörern klappt das am besten (sonst hört das Mikrofon Jarvis' eigene Stimme).
+UNTERBRECHEN = True
+UNTERBRECHEN_FAKTOR = 3.0          # wie viel lauter als die Umgebung (kleiner = empfindlicher)
+UNTERBRECHEN_MIN_SEKUNDEN = 0.35   # so lange musst du am Stück sprechen
 # Sprechgeschwindigkeit der Windows-Stimme (-10 = langsam, 0 = normal, 10 = schnell)
 SPRECHTEMPO = 1
 
@@ -74,6 +79,29 @@ FTMO_GEWINNZIEL = 10
 # Unsere eigene, strengere Grenze: ab diesem Tagesverlust (in %) wird für heute nicht mehr gehandelt
 SICHERHEIT_TAGESVERLUST = 3
 
+# ---------- Auto-Trader (Trading-Roboter) ----------
+# Stufen: 0 = nur Signale, 1 = Paper-Trading (virtuelles Geld), 2 = halbautomatisch, 3 = vollautomatisch.
+# Stufe 2 und 3 (echtes Geld) gibt es erst nach bestandenem Backtest + Paper-Trading und eurer Freigabe.
+TRADER_AKTIV = True                 # läuft in der Trading-Zentrale mit
+TRADER_STUFE = 1                    # 0 oder 1 – höhere Stufen sind noch gesperrt
+TRADER_MAERKTE = ["XAUUSD", "US100", "EURUSD"]
+TRADER_KONTO_START = 10000          # simuliertes Konto in USD (FTMO-Größe)
+TRADER_RISIKO_PROZENT = 1.0         # Verlust pro Trade, wenn der Stop-Loss getroffen wird
+TRADER_TAGESSTOPP_PROZENT = 2.0     # ab diesem Tagesverlust: heute keine neuen Trades
+TRADER_MAX_DRAWDOWN_PROZENT = 6.0   # ab diesem Verlust vom Höchststand: Roboter stoppt, bis ihr ihn freigebt
+TRADER_MAX_POSITIONEN = 2
+TRADER_VERLUSTSERIE_PAUSE = 3       # nach so vielen Verlusten in Folge: Pause bis morgen
+TRADER_MIN_CONFIDENCE = 60          # nur Signale ab diesem Score (0–100)
+TRADER_MIN_CRV = 1.5                # Chance/Risiko NACH Kosten
+TRADER_HANDELSZEIT = ("09:00", "21:00")   # österreichische Zeit, Montag bis Freitag
+TRADER_SCHLIESSEN_UM = "20:55"      # Daytrading: offene Positionen vor Handelsschluss schließen
+TRADER_NEWS_SPERRE_MINUTEN = 30     # keine neuen Trades so viele Minuten vor/nach wichtigen News
+TRADER_PRUEF_SEKUNDEN = 60          # so oft schaut der Roboter auf die Märkte
+# Geschätzte Kosten pro Trade (Spread + Kommission) in Preis-Einheiten – bitte mit FTMO abgleichen
+TRADER_KOSTEN = {"XAUUSD": 0.35, "US100": 2.0, "EURUSD": 0.00012, "US30": 3.0, "BTCUSD": 30.0}
+# Kleinste handelbare Menge in Einheiten (Unzen Gold, Index-Punkte, Euro)
+TRADER_EINHEITEN_SCHRITT = {"XAUUSD": 1, "US100": 0.1, "EURUSD": 1000, "US30": 0.1, "BTCUSD": 0.01}
+
 # Standard-Risiko pro Trade in Prozent (für Positionsrechner und Setup-Vorschläge)
 RISIKO_STANDARD_PROZENT = 0.5
 # News-Wächter: so viele Minuten vor wichtigen News warnt Jarvis (0 = aus) ...
@@ -84,6 +112,8 @@ NEWS_WAEHRUNGEN = ["USD", "EUR", "GBP"]
 TAGESENDE_ERINNERUNG = "21:45"
 
 # ---------- Oberfläche (Dashboard) ----------
+# Farbe der Trading-Zentrale: "rot" oder "blau"
+FARBSCHEMA = "rot"
 # Für welchen Ort soll das Wetter angezeigt werden?
 WETTER_ORT = "Berlin"
 # Welche Kurse sollen im Feld "Märkte" stehen? (Namen wie bei Hyperliquid)

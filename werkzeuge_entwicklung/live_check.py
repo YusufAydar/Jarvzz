@@ -65,5 +65,20 @@ pruefe("TradingView BTC", lambda: tv("BTCUSD"))
 pruefe("Hyperliquid BTC", hl)
 pruefe("Setup-Scanner", scanner)
 pruefe("Wirtschaftskalender", news)
+
+
+def roboter_backtest():
+    import einstellungen
+    from trader import backtest, risiko
+    regeln = risiko.Regeln(einstellungen)
+    texte = []
+    for markt in einstellungen.TRADER_MAERKTE:
+        _, _, quelle, kerzen = marktdaten.kerzen_holen(markt, "M15", 20000)
+        h1 = marktdaten.kerzen_holen(markt, "H1", 5000)[3]
+        texte.append(f"[{quelle}] " + backtest.text(backtest.backtest(markt, kerzen, regeln, 10000, h1), regeln))
+    return "\n\n" + "\n\n".join(texte)
+
+
+pruefe("Roboter-Backtest (echte Kurse)", roboter_backtest)
 print(f"\n{fehler} Fehler")
 sys.exit(1 if fehler else 0)

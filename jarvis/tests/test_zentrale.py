@@ -177,6 +177,34 @@ class TestZentraleServer(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError):
             self.post("/api/frage", {"text": "lösch alles"}, kopf=False)
 
+    def test_trader_ueber_die_oberflaeche(self):
+        from trader.engine import TradingEngine
+        self.assertIn("fehler", json.loads(self.get("/api/trader")))      # ohne Engine: klare Meldung
+        engine = TradingEngine(einstellungen, lambda *a: (_ for _ in ()).throw(RuntimeError("offline")),
+                               ordner=self.tmp.name)
+        self.kasten.trader = engine
+        try:
+            engine.schritt()
+            d = json.loads(self.get("/api/trader"))
+            self.assertEqual((d["modus"], d["stufe"]), ("PAPER", 1))
+            self.assertIn("keine Kursdaten", d["markt_info"]["XAUUSD"]["fehler"])
+            self.assertIn("pausiert", self.post("/api/trader", {"aktion": "pause"})["text"])
+            self.assertEqual(json.loads(self.get("/api/trader"))["status"], "pausiert")
+            self.assertIn("Roboter: PAUSIERT", self.kasten.ausfuehren("trader_status", {}))
+        finally:
+            self.kasten.trader = None
+
+    def test_stopp_knopf(self):
+        import stimme
+        prozess = mock.Mock()
+        prozess.poll.return_value = None
+        with mock.patch.object(stimme, "_aktueller_prozess", prozess):
+            self.assertTrue(self.post("/api/stumm", {})["ok"])
+        prozess.kill.assert_called_once()
+
+    def test_farbschema(self):
+        self.assertEqual(json.loads(self.get("/api/einstellungen"))["farbschema"], einstellungen.FARBSCHEMA)
+
     def test_chart_befehl_im_zustand(self):
         zentrale.zustand.chart("DAX", "H1")
         z = json.loads(self.get("/api/zustand"))

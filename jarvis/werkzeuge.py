@@ -232,6 +232,40 @@ WERKZEUG_BESCHREIBUNGEN = [
         },
     },
     {
+        "name": "trader_status",
+        "description": "Stand des Trading-Roboters (Paper-Trading): Status, Stufe, Konto, heutiges Ergebnis, "
+                       "offene Positionen, Statistik und die letzten Entscheidungen MIT Begründung. Für 'Wie läuft "
+                       "der Roboter?', 'Warum hast du Gold gekauft?' oder 'Warum handelst du nicht?'.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "trader_steuern",
+        "description": "Steuert den Trading-Roboter: 'pause' (keine neuen Trades), 'fortsetzen', 'notaus' "
+                       "(alle Paper-Positionen schließen und stoppen) oder 'zuruecksetzen' (Paper-Konto neu "
+                       "starten). Fortsetzen und Zurücksetzen nur nach Freigabe des Nutzers.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"aktion": {"type": "string", "enum": ["pause", "fortsetzen", "notaus", "zuruecksetzen"]}},
+            "required": ["aktion"],
+        },
+    },
+    {
+        "name": "backtest_starten",
+        "description": "Testet die Trading-Strategie des Roboters auf historischen Kursen (M15, so weit die Daten "
+                       "reichen) mit Kosten, Risiko-Engine, Kalibrierung des Confidence-Scores, Stabilitäts- und "
+                       "Monte-Carlo-Prüfung. Liefert ein Urteil (bestanden / nicht bestanden / zu wenig Daten).",
+        "input_schema": {
+            "type": "object",
+            "properties": {"symbol": {"type": "string", "description": "z. B. 'XAUUSD'; leer = alle Roboter-Märkte"}},
+        },
+    },
+    {
+        "name": "trading_tagesbericht",
+        "description": "Der tägliche Trading-Bericht des Roboters (Marktübersicht, Trades, Performance, "
+                       "Strategieanalyse) für heute oder ein Datum (JJJJ-MM-TT).",
+        "input_schema": {"type": "object", "properties": {"datum": {"type": "string"}}},
+    },
+    {
         "name": "an_claude_melden",
         "description": "Meldet Claude (deinem Entwickler in Claude Code) deine EIGENEN Änderungen: selbst "
                        "geänderte Programmdateien, selbstgebaute Werkzeuge und Einstellungen werden mit deiner "
@@ -556,6 +590,72 @@ class Werkzeugkasten:
             return "Gelöscht." if self._alarme().loeschen(loeschen_id) else f"Keinen Alarm mit ID {loeschen_id}."
         aktiv = self._alarme().aktive()
         return "\n".join(self._alarme().beschreibung(a) for a in aktiv) if aktiv else "Keine aktiven Alarme."
+
+    # ---------- Trading-Roboter ----------
+    trader = None  # die Zentrale setzt hier die laufende TradingEngine ein
+
+    def _trader_status(self):
+        if self.trader is None:
+            return "Der Trading-Roboter läuft nur in der Trading-Zentrale (jarvis_zentrale)."
+        d = self.trader.status_daten()
+        s = d["statistik"]
+        f = lambda x, n=2: "–" if x is None else ("∞" if x == float("inf") else f"{x:.{n}f}")
+        zeilen = [f"Roboter: {d['status'].upper()}" + (f" ({d['grund']})" if d["grund"] else "")
+                  + f", Stufe {d['stufe']} (PAPER – keine echten Orders), Handelszeit "
+                  + ("aktiv" if d["in_handelszeit"] else "vorbei/noch nicht"),
+                  f"Paper-Konto: {d['equity']:.2f} $ (Start {d['start']} $), heute {d['heute']:+.2f} $",
+                  f"Gesamt: {s['trades']} Trades, Win-Rate {f((s['win_rate'] or 0) * 100, 0)} %, "
+                  f"Profit-Faktor {f(s['profit_faktor'])}, max. Drawdown {s['max_drawdown_prozent']:.1f} %"]
+        for p in d["offene"]:
+            zeilen.append(f"Offen: {p['symbol']} {p['richtung']} ab {p['einstieg']}, Stop {p['stop']}, Ziel {p['ziel']}, "
+                          f"aktuell {p['stand']:+.2f} $, Confidence {p['confidence']}")
+        for symbol, info in d["markt_info"].items():
+            if info.get("fehler") or info.get("veraltet"):
+                zeilen.append(f"{symbol}: {info.get('fehler') or 'Daten veraltet'}")
+        zeilen.append("Letzte Entscheidungen:")
+        for e in d["entscheidungen"][:8]:
+            zeilen.append(f"- {datetime.fromtimestamp(e['zeit']):%H:%M} {e['symbol']} {e['aktion']}"
+                          + (f" (Confidence {e['confidence']})" if e.get("confidence") else "")
+                          + ": " + " | ".join(e["gruende"][:3]))
+        return "\n".join(zeilen)
+
+    def _trader_steuern(self, aktion):
+        if self.trader is None:
+            return "Der Trading-Roboter läuft nur in der Trading-Zentrale."
+        if aktion in ("fortsetzen", "zuruecksetzen") and not self.bestaetigen(
+                "trader", f"Trading-Roboter: {aktion}",
+                "Fortsetzen: der Roboter darf wieder Paper-Trades eröffnen.\n"
+                "Zurücksetzen: das Paper-Konto startet neu (alle Paper-Ergebnisse werden gelöscht)."):
+            return "Nicht freigegeben."
+        return self.trader.steuern(aktion)
+
+    def _backtest_starten(self, symbol=None):
+        from trader import backtest, risiko
+        from trading import marktdaten
+        regeln = risiko.Regeln(einstellungen)
+        texte = []
+        for markt in ([symbol] if symbol else einstellungen.TRADER_MAERKTE):
+            try:
+                _, _, quelle, kerzen = marktdaten.kerzen_holen(markt, "M15", 20000)
+                try:
+                    h1 = marktdaten.kerzen_holen(markt, "H1", 5000)[3]
+                except Exception:
+                    h1 = None
+                ergebnis = backtest.backtest(markt.upper(), kerzen, regeln, einstellungen.TRADER_KONTO_START, h1)
+                texte.append(f"[Daten: {quelle}]\n" + backtest.text(ergebnis, regeln))
+            except Exception as fehler:
+                texte.append(f"{markt}: Backtest nicht möglich ({fehler})")
+        return "\n\n".join(texte)
+
+    def _trading_tagesbericht(self, datum=None):
+        if self.trader is None:
+            return "Der Trading-Roboter läuft nur in der Trading-Zentrale."
+        from trader import bericht, risiko
+        tag = datum or risiko.tagesbeginn(time.time())
+        datei = einstellungen.DATEN_ORDNER / "trading_berichte" / f"{tag}.md"
+        if datei.exists():
+            return datei.read_text(encoding="utf-8")
+        return bericht.tagesbericht(self.trader, tag)
 
     def _an_claude_melden(self, nachricht):
         import sync

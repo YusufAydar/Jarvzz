@@ -12,14 +12,21 @@
   --bg:#070b14; --panel:#0d1424; --panel-2:#111b2f; --line:#1c2a44; --line-2:#2a3d61;
   --text:#e7eef8; --dim:#8090ab; --dim-2:#5d6c88;
   --cyan:#22d3ee; --green:#22e39a; --red:#ff4d6a; --amber:#fbbf24; --violet:#a78bfa;
+  --akzent-rgb:34,211,238; --glow:#0f1c33; --tief-rgb:7,11,20; --knopf-rgb:10,17,32;
   --logo:"Orbitron","Rajdhani","Segoe UI",sans-serif;
   --sans:"Rajdhani","Segoe UI",system-ui,sans-serif;
   --mono:"JetBrains Mono",Consolas,ui-monospace,monospace;
   color-scheme:dark;
 }
+/* Farbschema Rot (FARBSCHEMA = "rot" in den Einstellungen) – Palette von Jarvis selbst gewählt */
+:root[data-farbe="rot"]{
+  --bg:#120607; --panel:#1c0b0d; --panel-2:#261013; --line:#3d1a1f; --line-2:#5c252c;
+  --text:#f8e9ea; --dim:#ab8086; --dim-2:#885d63; --cyan:#ff3b3b;
+  --akzent-rgb:255,59,59; --glow:#2a0c10; --tief-rgb:18,6,7; --knopf-rgb:28,11,13;
+}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:radial-gradient(1200px 600px at 50% -10%,#0f1c33 0%,var(--bg) 60%) fixed;color:var(--text);font-family:var(--sans);font-size:15px;display:flex;flex-direction:column;overflow:hidden}
+body{background:radial-gradient(1200px 600px at 50% -10%,var(--glow) 0%,var(--bg) 60%) fixed;color:var(--text);font-family:var(--sans);font-size:15px;display:flex;flex-direction:column;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
 .mono{font-family:var(--mono)} .zahl{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .dim{color:var(--dim)} .gruen{color:var(--green)} .rot{color:var(--red)} .amber{color:var(--amber)} .cyan{color:var(--cyan)}
@@ -27,17 +34,17 @@ button,input,select{font:inherit;color:inherit}
 
 /* ---------- Kopfleiste ---------- */
 header{display:flex;align-items:center;gap:20px;padding:10px 18px;border-bottom:1px solid var(--line);min-height:62px}
-.logo{font-family:var(--logo);font-weight:900;font-size:22px;letter-spacing:.32em;color:var(--cyan);text-shadow:0 0 18px rgba(34,211,238,.45);line-height:1}
+.logo{font-family:var(--logo);font-weight:900;font-size:22px;letter-spacing:.32em;color:var(--cyan);text-shadow:0 0 18px rgba(var(--akzent-rgb),.45);line-height:1}
 .logo small{display:block;font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.42em;color:var(--dim);text-shadow:none;margin-top:5px}
 #laufleiste{flex:1;min-width:0;display:flex;gap:22px;overflow:hidden;white-space:nowrap;font-family:var(--mono);font-size:12.5px;mask-image:linear-gradient(90deg,#000 92%,transparent)}
 #laufleiste .t{display:inline-flex;gap:7px;cursor:pointer}
 #laufleiste .t b{font-weight:600}
 .kopf-rechts{display:flex;align-items:center;gap:14px}
-.pille{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);border-radius:999px;padding:5px 11px;font-family:var(--mono);font-size:11.5px;white-space:nowrap;background:rgba(10,17,32,.6)}
+.pille{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);border-radius:999px;padding:5px 11px;font-family:var(--mono);font-size:11.5px;white-space:nowrap;background:rgba(var(--knopf-rgb),.6)}
 .punkt{width:8px;height:8px;border-radius:50%;background:var(--dim-2);display:inline-block}
 .punkt.an{background:var(--green);box-shadow:0 0 8px var(--green)}
 #uhr{font-family:var(--mono);font-size:20px;color:var(--cyan);font-weight:600}
-.knopf{background:rgba(10,17,32,.7);border:1px solid var(--line-2);border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:700;letter-spacing:.06em;font-size:13px}
+.knopf{background:rgba(var(--knopf-rgb),.7);border:1px solid var(--line-2);border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:700;letter-spacing:.06em;font-size:13px}
 .knopf:hover,.knopf:focus-visible{border-color:var(--cyan);outline:none}
 .knopf.primaer{border-color:var(--cyan);color:var(--cyan)}
 .knopf.klein{padding:4px 9px;font-size:12px;border-radius:7px}
@@ -54,7 +61,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 
 /* Konto */
 .kacheln3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.kachel{background:rgba(7,11,20,.55);border:1px solid var(--line);border-radius:9px;padding:8px 6px;text-align:center}
+.kachel{background:rgba(var(--tief-rgb),.55);border:1px solid var(--line);border-radius:9px;padding:8px 6px;text-align:center}
 .kachel .l{font-size:10px;letter-spacing:.2em;color:var(--dim)}
 .kachel .w{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:3px}
 .balken{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:5px 0 3px}
@@ -66,24 +73,41 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 /* Watchlist / Setups */
 .liste-zeile{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 2px;cursor:pointer;text-align:left}
 .liste-zeile:last-child{border-bottom:0}
-.liste-zeile:hover,.liste-zeile:focus-visible{background:rgba(34,211,238,.05);outline:none}
+.liste-zeile:hover,.liste-zeile:focus-visible{background:rgba(var(--akzent-rgb),.05);outline:none}
 .liste-zeile.aktiv{background:rgba(251,191,36,.06)}
 .liste-zeile .n{font-weight:700;font-size:15px}
 .liste-zeile .u{font-family:var(--mono);font-size:11px;color:var(--dim)}
 .badge{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
 .setup-zeile{border-bottom:1px solid var(--line);padding:8px 2px;cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
 .setup-zeile:last-child{border-bottom:0}
-.setup-zeile:hover,.setup-zeile:focus-visible{background:rgba(34,211,238,.05);outline:none}
+.setup-zeile:hover,.setup-zeile:focus-visible{background:rgba(var(--akzent-rgb),.05);outline:none}
 .setup-zeile .k{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .setup-zeile .d{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.5}
 
 /* Formulare */
 .formular{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .formular label{display:flex;flex-direction:column;gap:3px;font-size:11px;letter-spacing:.14em;color:var(--dim)}
-.formular input,.formular select{background:rgba(7,11,20,.7);border:1px solid var(--line-2);border-radius:7px;padding:7px 8px;font-family:var(--mono);font-size:13px;min-width:0}
+.formular input,.formular select{background:rgba(var(--tief-rgb),.7);border:1px solid var(--line-2);border-radius:7px;padding:7px 8px;font-family:var(--mono);font-size:13px;min-width:0}
 .formular input:focus,.formular select:focus{outline:none;border-color:var(--cyan)}
-.ergebnis{margin-top:10px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.3);border-radius:9px;padding:9px 11px;font-size:14px}
+.ergebnis{margin-top:10px;background:rgba(var(--akzent-rgb),.06);border:1px solid rgba(var(--akzent-rgb),.3);border-radius:9px;padding:9px 11px;font-size:14px}
 .ergebnis b{font-family:var(--mono);font-size:20px;color:var(--cyan)}
+
+/* Auto-Trader */
+.status-pille{font-family:var(--mono);font-size:11px;letter-spacing:.14em;padding:2px 9px;border-radius:999px;border:1px solid currentColor}
+.knopfreihe{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.knopf.notaus{border-color:var(--red);color:var(--red)}
+.knopf.notaus.scharf{background:var(--red);color:#fff}
+.regel-zeile{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:8px;line-height:1.6}
+.pos-zeile{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+#bt-ergebnis{margin-top:10px;white-space:pre-wrap;font-family:var(--mono);font-size:11.5px;line-height:1.55;background:rgba(var(--tief-rgb),.6);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:280px;overflow:auto}
+.entscheidung{border-bottom:1px solid var(--line);padding:7px 2px;cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.entscheidung:last-child{border-bottom:0}
+.entscheidung .k{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.entscheidung .g{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.45}
+.entscheidung .mehr{display:none;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:4px;line-height:1.55}
+.entscheidung.offen .mehr{display:block}
+.conf{display:inline-block;width:46px;height:5px;background:var(--line);border-radius:3px;overflow:hidden;vertical-align:middle}
+.conf i{display:block;height:100%}
 
 /* ---------- Mitte ---------- */
 .mitte{display:flex;flex-direction:column;gap:14px;min-height:0;min-width:0}
@@ -102,7 +126,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 #tv-bereich .tradingview-widget-container,#tv-bereich .tradingview-widget-container__widget{height:100%;width:100%}
 #eigen-bereich{display:flex;flex-direction:column}
 #chart{flex:1;position:relative} #rsi-chart{height:105px;position:relative;border-top:1px solid var(--line)}
-#chart-meldung{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--dim);font-family:var(--mono);font-size:13px;background:rgba(7,11,20,.85);z-index:5}
+#chart-meldung{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--dim);font-family:var(--mono);font-size:13px;background:rgba(var(--tief-rgb),.85);z-index:5}
 .chart-fuss{display:flex;gap:14px;flex-wrap:wrap;padding:0 14px 10px;font-family:var(--mono);font-size:10.5px;color:var(--dim-2)}
 .chart-fuss a{color:var(--dim)}
 .legende i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px}
@@ -116,22 +140,22 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 #dialog{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .blase{max-width:86%;padding:8px 12px;border-radius:9px;font-size:14.5px;line-height:1.4;white-space:pre-wrap}
 .blase .z{display:block;font-size:10px;color:var(--dim-2);letter-spacing:.1em;margin-bottom:2px}
-.blase.jarvis{align-self:flex-start;background:rgba(34,211,238,.06);border-left:3px solid var(--cyan)}
+.blase.jarvis{align-self:flex-start;background:rgba(var(--akzent-rgb),.06);border-left:3px solid var(--cyan)}
 .blase.du{align-self:flex-end;background:rgba(251,191,36,.05);border-right:3px solid var(--amber);text-align:right}
 .schnell{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px}
 .eingabe{display:flex;gap:8px;padding:0 14px 12px}
-.eingabe input{flex:1;min-width:0;background:rgba(7,11,20,.7);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;font-size:15px}
+.eingabe input{flex:1;min-width:0;background:rgba(var(--tief-rgb),.7);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;font-size:15px}
 .eingabe input:focus{outline:none;border-color:var(--cyan)}
 #freigabe{position:absolute;inset:8px;background:rgba(13,8,14,.96);border:1px solid var(--red);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;z-index:6}
 #freigabe pre{flex:1;margin:0;overflow:auto;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:7px;padding:8px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-word}
 
 /* ---------- Rechts ---------- */
 .tv-raster{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.tv-zelle{border-radius:9px;padding:7px 4px;text-align:center;border:1px solid var(--line);background:rgba(7,11,20,.5)}
+.tv-zelle{border-radius:9px;padding:7px 4px;text-align:center;border:1px solid var(--line);background:rgba(var(--tief-rgb),.5)}
 .tv-zelle .l{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
 .tv-zelle .w{font-weight:700;font-size:12.5px;margin-top:2px;letter-spacing:.02em}
 .kacheln2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.mini{border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:rgba(7,11,20,.5)}
+.mini{border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:rgba(var(--tief-rgb),.5)}
 .mini .l{font-size:10px;letter-spacing:.18em;color:var(--dim)}
 .mini .w{font-weight:700;font-size:15px}
 .zonen{margin-top:8px;font-family:var(--mono);font-size:12px;line-height:1.75}
@@ -175,6 +199,19 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 <main>
   <!-- ================= LINKS ================= -->
   <div class="spalte">
+    <section class="karte" id="karte-trader">
+      <div class="kopf">AUTO-TRADER · PAPER <span class="r" id="trader-status"></span></div>
+      <div class="inhalt" id="trader"><div class="leer">Starte Roboter …</div>
+      </div>
+      <div class="inhalt" style="padding-top:0">
+        <div class="knopfreihe">
+          <button class="knopf klein" id="t-pause">⏸ PAUSE</button>
+          <button class="knopf klein notaus" id="t-notaus" title="Schließt alle Paper-Positionen und stoppt neue Trades">⛔ NOT-AUS</button>
+          <button class="knopf klein" id="t-backtest" title="Strategie auf historischen Kursen testen">🧪 BACKTEST</button>
+        </div>
+        <div id="bt-ergebnis" hidden></div>
+      </div>
+    </section>
     <section class="karte">
       <div class="kopf">FTMO-KONTO <span class="r" id="ampel"></span></div>
       <div class="inhalt" id="konto"><div class="leer">Lade …</div></div>
@@ -234,7 +271,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
     </section>
 
     <section class="karte" id="dock">
-      <div class="orb-bereich"><canvas id="orb" width="236" height="236" aria-hidden="true"></canvas><div id="modus-text">BEREIT</div></div>
+      <div class="orb-bereich"><canvas id="orb" width="236" height="236" aria-hidden="true"></canvas><div id="modus-text">BEREIT</div>
+        <button class="knopf klein" id="stumm" hidden title="Jarvis sofort verstummen lassen" style="margin-top:6px">⏹ STOPP</button></div>
       <div class="dock-rechts">
         <div id="dialog" aria-live="polite"></div>
         <div class="schnell">
@@ -263,6 +301,10 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 
   <!-- ================= RECHTS ================= -->
   <div class="spalte">
+    <section class="karte">
+      <div class="kopf">ROBOTER-ENTSCHEIDUNGEN <span class="r" id="ent-zahl"></span></div>
+      <div class="inhalt" id="entscheidungen" style="max-height:330px;overflow:auto"><div class="leer">Noch keine Entscheidung – der Roboter prüft bei jeder abgeschlossenen 15-Minuten-Kerze.</div></div>
+    </section>
     <section class="karte">
       <div class="kopf">ANALYSE <span class="r" id="analyse-symbol"></span></div>
       <div class="inhalt">
@@ -307,6 +349,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(0,1fr) 
 <script src="/vendor/lightweight-charts.js"></script>
 <script>
 const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const akzentRGB=()=>css('--akzent-rgb').split(',').map(Number);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(x,n=2)=>x==null||isNaN(x)?'–':Number(x).toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
 const holen=url=>fetch(url,{cache:'no-store'}).then(r=>r.json());
@@ -344,7 +388,7 @@ function tvZeigen(){
   const sk=document.createElement('script');
   sk.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';sk.async=true;
   sk.textContent=JSON.stringify({autosize:true,symbol:ticker,interval:TV_INTERVALL[tf]||'15',timezone:'Europe/Vienna',
-    theme:'dark',style:'1',locale:'de_DE',backgroundColor:'rgba(13,20,36,1)',gridColor:'rgba(42,61,97,0.25)',
+    theme:'dark',style:'1',locale:'de_DE',backgroundColor:css('--panel'),gridColor:'rgba(128,128,128,0.15)',
     allow_symbol_change:true,withdateranges:true,hide_side_toolbar:false,details:false,calendar:false,
     studies:['STD;EMA','STD;RSI','STD;MACD'],support_host:'https://www.tradingview.com'});
   sk.onerror=()=>{$('chart-meldung').hidden=false;$('chart-meldung').textContent='TradingView konnte nicht geladen werden (Internet?). Umschalten auf JARVIS-CHART geht immer.'};
@@ -356,8 +400,8 @@ let chart=null,kerzenS,ema20,ema50,rsiChart,rsiLinie,linien=[],linienSchl='',let
 function eigenAnlegen(){
   if(chart)return;
   const basis={layout:{background:{type:'solid',color:'transparent'},textColor:'#8090ab',fontFamily:'JetBrains Mono, Consolas, monospace'},
-    grid:{vertLines:{color:'rgba(42,61,97,.25)'},horzLines:{color:'rgba(42,61,97,.25)'}},rightPriceScale:{borderColor:'#1c2a44'},
-    timeScale:{borderColor:'#1c2a44',timeVisible:true,secondsVisible:false},crosshair:{mode:0},autoSize:true,localization:{locale:'de-DE'}};
+    grid:{vertLines:{color:'rgba(128,128,128,.12)'},horzLines:{color:'rgba(128,128,128,.12)'}},rightPriceScale:{borderColor:css('--line')},
+    timeScale:{borderColor:css('--line'),timeVisible:true,secondsVisible:false},crosshair:{mode:0},autoSize:true,localization:{locale:'de-DE'}};
   chart=LightweightCharts.createChart($('chart'),basis);
   kerzenS=chart.addCandlestickSeries({upColor:'#22e39a',downColor:'#ff4d6a',borderVisible:false,wickUpColor:'#22e39a',wickDownColor:'#ff4d6a'});
   ema20=chart.addLineSeries({color:'#22d3ee',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
@@ -606,7 +650,7 @@ let modus='bereit',mikroAn=true,dialogSchl='';
 const MODUS_TEXT={bereit:'BEREIT',hoert:'HÖRT ZU',denkt:'DENKT …',spricht:'SPRICHT',wartet:'FREIGABE?'};
 async function zustandLaden(){
   let z;try{z=await holen('/api/zustand')}catch(e){$('modus-text').textContent='OFFLINE';modus='offline';return}
-  modus=z.modus;mikroAn=z.mikro_an;$('modus-text').textContent=MODUS_TEXT[modus]||modus.toUpperCase();
+  modus=z.modus;mikroAn=z.mikro_an;$('stumm').hidden=modus!=='spricht';$('modus-text').textContent=MODUS_TEXT[modus]||modus.toUpperCase();
   $('mikro').textContent=mikroAn?'🎙 MIKRO AN':'🎙 MIKRO AUS';$('mikro').title=z.mikro_fehler||'';
   const s=JSON.stringify(z.dialog);
   if(s!==dialogSchl){dialogSchl=s;$('dialog').innerHTML=z.dialog.map(e=>`<div class="blase ${e.wer==='du'?'du':'jarvis'}"><span class="z">${e.wer==='du'?'DU':'JARVIS'} · ${esc(e.zeit)}</span>${esc(e.text)}</div>`).join('');$('dialog').scrollTop=1e9}
@@ -619,6 +663,7 @@ async function zustandLaden(){
 }
 $('fg-ja').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:true});
 $('fg-nein').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:false});
+$('stumm').onclick=()=>senden('/api/stumm',{});
 $('mikro').onclick=()=>senden('/api/mikro',{an:!mikroAn}).then(zustandLaden);
 const fragen=t=>senden('/api/frage',{text:t}).then(zustandLaden);
 $('eingabe').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(t){$('frage').value='';fragen(t)}};
@@ -633,7 +678,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-frage]');i
 
 /* ================= Orb-Animation ================= */
 const ORB_FARBE={bereit:[34,211,238],hoert:[34,227,154],denkt:[251,191,36],spricht:[120,232,255],wartet:[255,77,106],offline:[93,108,136]};
-let farbe=[34,211,238];const ox=$('orb').getContext('2d'),ruhig=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let farbe=[34,211,238];
+function farbschemaSetzen(name){
+  if(name==='rot')document.documentElement.dataset.farbe='rot';else delete document.documentElement.dataset.farbe;
+  const a=akzentRGB();ORB_FARBE.bereit=a;ORB_FARBE.spricht=a.map(c=>Math.min(255,c+60));farbe=[...a];
+  tvSchluessel='';if(typeof tvZeigen==='function')tvZeigen();
+}const ox=$('orb').getContext('2d'),ruhig=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function orb(t){
   const W=236,M=W/2,s=ruhig?0:t/1000,ziel=ORB_FARBE[modus]||ORB_FARBE.bereit;farbe=farbe.map((c,i)=>c+(ziel[i]-c)*.08);
   const [r,g,b]=farbe.map(Math.round),c=a=>`rgba(${r},${g},${b},${a})`,tempo={denkt:2.2,spricht:1,hoert:.8,wartet:.3}[modus]||.35;
@@ -647,9 +697,55 @@ function orb(t){
 }
 requestAnimationFrame(orb);
 
+/* ================= Auto-Trader ================= */
+const STATUS_FARBE={aktiv:'var(--green)',pausiert:'var(--amber)',notaus:'var(--red)',gesperrt:'var(--red)'};
+const AKTION_FARBE={BUY:'gruen',SELL:'rot',WAIT:'dim',HOLD:'amber'};
+let traderStatus='aktiv',entSchl='';
+async function traderLaden(){
+  let d;try{d=await holen('/api/trader')}catch(e){return}
+  if(d.fehler){$('trader').innerHTML=`<div class="leer">${esc(d.fehler)}</div>`;$('karte-trader').querySelector('.knopfreihe').hidden=true;return}
+  traderStatus=d.status;const s=d.statistik,farbe=STATUS_FARBE[d.status]||'var(--dim)';
+  $('trader-status').innerHTML=`<span class="status-pille" style="color:${farbe}">${d.status.toUpperCase()}</span>`;
+  $('t-pause').textContent=d.status==='aktiv'?'⏸ PAUSE':'▶ WEITER';
+  const zeit=d.letzter_durchgang?new Date(d.letzter_durchgang*1000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'–';
+  $('trader').innerHTML=`<div class="kacheln3">
+      <div class="kachel"><div class="l">PAPER-KONTO</div><div class="w">${fmt(d.equity,0)}</div></div>
+      <div class="kachel"><div class="l">HEUTE</div><div class="w ${d.heute>=0?'gruen':'rot'}">${d.heute>=0?'+':''}${fmt(d.heute,0)}</div></div>
+      <div class="kachel"><div class="l">TRADES · WIN</div><div class="w">${s.trades} · ${s.win_rate==null?'–':fmt(s.win_rate*100,0)+'%'}</div></div></div>
+    ${d.grund?`<div class="leer" style="margin-top:6px;color:${farbe}">${esc(d.grund)}</div>`:''}
+    <div class="regel-zeile">Stufe ${d.stufe} · ${esc(d.modus)} · Risiko ${d.regeln.risiko} % · Tagesstopp ${d.regeln.tagesstopp} % · min. Confidence ${d.regeln.min_confidence}<br>
+      Handelszeit ${d.handelszeit[0]}–${d.handelszeit[1]} ${d.in_handelszeit?'<span class="gruen">● offen</span>':'<span class="dim">● geschlossen</span>'} · letzter Blick ${zeit}<br>
+      Profit-Faktor ${s.profit_faktor==null?'–':s.profit_faktor===Infinity?'∞':fmt(s.profit_faktor,2)} · max. Drawdown ${fmt(s.max_drawdown_prozent,1)} %</div>
+    ${Object.entries(d.markt_info).map(([m,i])=>`<div class="pos-zeile"><span>${esc(m)}</span><span class="zahl ${i.fehler||i.veraltet?'rot':'dim'}">${i.fehler?esc(i.fehler.slice(0,38)):(fmt(i.preis,i.stellen)+(i.veraltet?' · veraltet':' · '+esc(i.quelle)))}</span></div>`).join('')}
+    ${d.offene.map(p=>`<div class="pos-zeile"><span><b class="${p.richtung==='LONG'?'gruen':'rot'}">${p.richtung}</b> ${esc(p.symbol)} · C ${p.confidence}</span><span class="zahl ${p.stand>=0?'gruen':'rot'}">${p.stand>=0?'+':''}${fmt(p.stand)}</span></div>`).join('')}`;
+  const schl=JSON.stringify(d.entscheidungen.slice(0,40).map(e=>e.zeit+e.symbol));
+  if(schl!==entSchl){entSchl=schl;
+    $('ent-zahl').textContent=d.entscheidungen.length?d.entscheidungen.length+' HEUTE+':'';
+    $('entscheidungen').innerHTML=d.entscheidungen.slice(0,40).map(e=>{const c=e.confidence;
+      return `<button class="entscheidung"><div class="k"><span class="dim zahl" style="font-size:11px">${new Date(e.zeit*1000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</span>
+        <b>${esc(e.symbol)}</b><span class="badge ${AKTION_FARBE[e.aktion]||''}">${e.aktion}</span>
+        ${c!=null?`<span class="conf" title="Confidence ${c}"><i style="width:${c}%;background:${c>=70?'var(--green)':c>=60?'var(--amber)':'var(--dim-2)'}"></i></span><span class="zahl dim" style="font-size:11px">${c}</span>`:''}</div>
+        <div class="g">${esc(e.gruende[0]||'')}</div>
+        <div class="mehr">${e.gruende.slice(1).map(esc).join('<br>')}${Object.keys(e.teile||{}).length?'<br>Score: '+Object.entries(e.teile).map(([k,v])=>esc(k)+' '+v).join(' · '):''}</div></button>`}).join('')||'<div class="leer">Noch keine Entscheidung.</div>';}
+}
+$('entscheidungen').onclick=e=>{const b=e.target.closest('.entscheidung');if(b)b.classList.toggle('offen')};
+$('t-pause').onclick=()=>senden('/api/trader',{aktion:traderStatus==='aktiv'?'pause':'fortsetzen'}).then(traderLaden);
+let notausScharf=null;
+$('t-notaus').onclick=()=>{const k=$('t-notaus');
+  if(!notausScharf){k.classList.add('scharf');k.textContent='⛔ WIRKLICH? KLICK NOCHMAL';notausScharf=setTimeout(()=>{k.classList.remove('scharf');k.textContent='⛔ NOT-AUS';notausScharf=null},4000);return}
+  clearTimeout(notausScharf);notausScharf=null;k.classList.remove('scharf');k.textContent='⛔ NOT-AUS';
+  senden('/api/trader',{aktion:'notaus'}).then(traderLaden)};
+let btTimer=null;
+async function backtestStand(){
+  const d=await holen('/api/backtest');$('bt-ergebnis').hidden=false;
+  if(d.laeuft){$('bt-ergebnis').textContent=`Backtest läuft (${d.symbol}) … das kann 1–2 Minuten dauern.`;btTimer=setTimeout(backtestStand,3000);return}
+  $('bt-ergebnis').textContent=d.text||'';$('t-backtest').disabled=false;
+}
+$('t-backtest').onclick=async()=>{$('t-backtest').disabled=true;await senden('/api/backtest',{});backtestStand()};
+
 /* ================= Start ================= */
 holen('/api/einstellungen').then(e=>{
-  E=e;$('watch-tf').textContent=e.zeitrahmen;$('r-risiko').value=e.risiko;
+  E=e;farbschemaSetzen(e.farbschema);$('watch-tf').textContent=e.zeitrahmen;$('r-risiko').value=e.risiko;
   if(!speicher.tf)tf=e.zeitrahmen;
   const start=speicher.symbol&&(e.maerkte.includes(speicher.symbol)||e.alle_tradingview[norm(speicher.symbol)])?speicher.symbol:e.maerkte[0];
   ansichtSetzen(ansicht==='eigen'?'eigen':'tv');waehle(start,tf);
@@ -664,6 +760,7 @@ kryptoLaden();setInterval(kryptoLaden,20000);
 setTimeout(setupsLaden,1500);setInterval(setupsLaden,120000);
 kalenderLaden();setInterval(kalenderLaden,300000);setInterval(newsZeigen,30000);
 alarmeLaden();setInterval(alarmeLaden,10000);
+traderLaden();setInterval(traderLaden,5000);
 profisLaden();setInterval(profisLaden,900000);
 setInterval(()=>symbol&&tvLaden(),60000);
 setInterval(()=>{if(!$('tagebuch').hidden)tagebuchLaden()},60000);

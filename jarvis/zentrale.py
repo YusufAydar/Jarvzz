@@ -54,6 +54,8 @@ WERKZEUG_NAMEN = {
     "chart_zeigen": "Chart", "bildschirm_ansehen": "Schaut auf den Bildschirm",
     "tagebuch_eintragen": "Tagebuch", "tagebuch_auswertung": "Tagebuch-Auswertung",
     "an_claude_melden": "An Claude gemeldet", "neuigkeiten": "Neuigkeiten",
+    "trader_status": "Roboter-Status", "trader_steuern": "Roboter gesteuert", "backtest_starten": "Backtest",
+    "trading_tagesbericht": "Tagesbericht",
     "medien_steuern": "Medien", "datei_suchen": "Dateisuche", "datei_oeffnen": "Datei geöffnet",
     "pc_sperren": "PC gesperrt",
 }
@@ -147,6 +149,7 @@ class Freigabe:
 
 
 freigabe = Freigabe()
+backtest_stand = {"laeuft": False, "text": ""}
 
 
 def melden(text, kategorie="alarm", sprechen=True):
@@ -468,6 +471,7 @@ def baue_handler(kalender, werkzeugkasten):
                 from trading import kursquellen
                 self._antwort({"maerkte": einstellungen.TRADING_MAERKTE, "zeitrahmen": einstellungen.TRADING_ZEITRAHMEN,
                                "risiko": einstellungen.RISIKO_STANDARD_PROZENT, "anrede": einstellungen.ANREDE,
+                               "farbschema": getattr(einstellungen, "FARBSCHEMA", "rot"),
                                "tradingview": {m: kursquellen.tradingview_kuerzel(m) for m in einstellungen.TRADING_MAERKTE
                                                if kursquellen.tradingview_kuerzel(m)},
                                "alle_tradingview": {n: tv for n, (_, tv) in kursquellen.SYMBOLE.items()}})
@@ -497,6 +501,11 @@ def baue_handler(kalender, werkzeugkasten):
                 self._antwort(self._versuche(lambda: marktdaten.positions_rechner(
                     symbol, float(p["einstieg"]), float(p["stop"]), float(p.get("risiko") or
                                                                            einstellungen.RISIKO_STANDARD_PROZENT))))
+            elif pfad == "/api/trader":
+                engine = werkzeugkasten.trader
+                self._antwort(engine.status_daten() if engine else {"fehler": "Trading-Roboter ist ausgeschaltet (TRADER_AKTIV)"})
+            elif pfad == "/api/backtest":
+                self._antwort(backtest_stand)
             elif pfad == "/api/tagebuch":
                 tb = werkzeugkasten._tagebuch()
                 self._antwort({"auswertung": tb.auswertung(int(p.get("tage") or 30)),
@@ -520,6 +529,31 @@ def baue_handler(kalender, werkzeugkasten):
             elif self.path == "/api/mikro":
                 zustand.mikro_an = bool(d.get("an")) and zustand.mikro_fehler is None
                 self._antwort({"ok": True, "mikro_an": zustand.mikro_an})
+            elif self.path == "/api/trader":
+                engine = werkzeugkasten.trader
+                aktion = d.get("aktion")
+                if engine is None or aktion not in ("pause", "fortsetzen", "notaus", "zuruecksetzen"):
+                    return self._antwort({"fehler": "nicht möglich"}, 400)
+                text = engine.steuern(aktion)
+                zustand.protokoll(f"Trader: {text}", "warnung" if aktion == "notaus" else "info")
+                self._antwort({"ok": True, "text": text})
+            elif self.path == "/api/backtest":
+                if backtest_stand.get("laeuft"):
+                    return self._antwort({"fehler": "Es läuft schon ein Backtest."})
+                symbol = str(d.get("symbol") or "").upper() or None
+                backtest_stand.update({"laeuft": True, "symbol": symbol or "alle", "text": "", "start": time.time()})
+
+                def rechnen():
+                    try:
+                        backtest_stand["text"] = werkzeugkasten.ausfuehren("backtest_starten", {"symbol": symbol} if symbol else {})
+                    except Exception as fehler:
+                        backtest_stand["text"] = f"Backtest fehlgeschlagen: {fehler}"
+                    backtest_stand["laeuft"] = False
+                    backtest_stand["fertig"] = time.time()
+                threading.Thread(target=rechnen, daemon=True).start()
+                self._antwort({"ok": True})
+            elif self.path == "/api/stumm":
+                self._antwort({"ok": stimme.stoppen()})
             elif self.path == "/api/freigabe":
                 freigabe.antworten(d.get("id"), d.get("ja"))
                 self._antwort({"ok": True})
@@ -572,6 +606,18 @@ def main():
         return False
     werkzeugkasten.ui_befehl = ui_befehl
     werkzeugkasten.alarme_starten()
+
+    if getattr(einstellungen, "TRADER_AKTIV", False):
+        from trader.engine import TradingEngine
+        from trading import marktdaten
+
+        def wichtige_news():
+            return [t for t in kalender_daten()["termine"] if t["wichtig"] == "HOCH"]
+        engine = TradingEngine(einstellungen, marktdaten.kerzen_holen, melden=lambda text: melden(text, "trader"),
+                               news=wichtige_news)
+        werkzeugkasten.trader = engine
+        engine.starten()
+        zustand.protokoll(f"Trading-Roboter gestartet (Stufe {engine.stufe}, PAPER, Status {engine.status})", "ok")
 
     gehirn = Gehirn(werkzeugkasten, beobachter=lambda name, eingaben: zustand.protokoll(
         WERKZEUG_NAMEN.get(name, name) + (f": {next(iter(eingaben.values()))}" if eingaben else ""), "werkzeug"))

@@ -74,23 +74,26 @@ def kerzen_holen(symbol, zeitrahmen, anzahl=300):
     coin = KRYPTO.get(symbol.upper().replace("/", ""))
     if coin:
         try:
-            kerzen = _aus_cache(("HL", coin, zeitrahmen), sekunden,
+            kerzen = _aus_cache(("HL", coin, zeitrahmen, menge), sekunden,
                                 lambda: _hyperliquid_kerzen(coin, zeitrahmen, menge))
             if kerzen:
                 return (f"{coin} (Hyperliquid)", _stellen_schaetzen(kerzen[-1]["close"]), "Hyperliquid",
                         kerzen[-anzahl:])
         except Exception:
             pass
+    internet_fehler = None
     if kursquellen.yahoo_kuerzel(symbol):
         try:
-            kuerzel, kerzen = _aus_cache(("Y", kursquellen.yahoo_kuerzel(symbol), zeitrahmen), sekunden,
+            kuerzel, kerzen = _aus_cache(("Y", kursquellen.yahoo_kuerzel(symbol), zeitrahmen, menge), sekunden,
                                          lambda: kursquellen.yahoo_kerzen(symbol, zeitrahmen, menge))
             if kerzen:
                 return (f"{symbol.upper()} ({kuerzel})", _stellen_schaetzen(kerzen[-1]["close"]),
                         "Yahoo Finance", kerzen[-anzahl:])
-        except Exception:
-            pass
-    raise mt5_fehler
+        except Exception as fehler:
+            internet_fehler = fehler
+    if coin or internet_fehler:
+        raise mt.MT5Fehler(f"Keine Kurse: Internet-Kursquelle nicht erreichbar, MT5 auch nicht ({mt5_fehler})")
+    raise mt.MT5Fehler(f"Für {symbol} gibt es nur Kurse über MT5 ({mt5_fehler})")
 
 
 def chart_daten(symbol, zeitrahmen):

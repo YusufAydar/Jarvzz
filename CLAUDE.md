@@ -8,6 +8,8 @@ Antworten auf Deutsch, kurz, Schritt für Schritt, ohne Fachjargon. Code-Komment
   - `zentrale.py` + `zentrale/index.html` – die **Trading-Zentrale** (Haupt-Oberfläche, lokaler Webserver auf 127.0.0.1:8765).
   - `gehirn.py` (Claude-Schleife, Grundanweisung), `werkzeuge.py` (alle Werkzeuge), `trading/` (Kurse, Indikatoren,
     Setups, Alarme, TradingView, Kalender, Tagebuch, MT5), `vollzugriff.py`, `updater.py`, `sync.py`.
+  - `trader/` – Trading-Roboter: `strategie.py` (Signal + Confidence), `risiko.py` (harte Grenzen), `paper.py`
+    (virtuelles Konto), `engine.py` (Dauerbetrieb), `backtest.py`, `bericht.py`. Stufe 1 = nur Paper, echte Orders gibt es nicht.
   - `oberflaeche.py` – älteres Dashboard. Auf Yusufs PC hat Jarvis es **selbst umgebaut** (eigenes Design) – der
     Updater überschreibt es dort nicht.
 - Hauptverzeichnis: Hyperliquid-Top-Trader-Analyse (`main.py`, Bericht täglich per GitHub Action).
@@ -22,6 +24,8 @@ mit dem Werkzeug `an_claude_melden` in den Zweig **`jarvis-pc`** (Ordner `jarvis
 2. **Nachher melden:** Jede Änderung an `jarvis/` bekommt oben in `jarvis/NEUIGKEITEN.md` einen neuen Eintrag
    `## JJJJ-MM-TT · Titel` + kurze Beschreibung der neuen Fähigkeiten. Jarvis erkennt daran das Update und kennt
    danach seine neuen Fähigkeiten.
+   Übernommene Jarvis-Dateien in `werkzeuge_entwicklung/uebernommen.txt` eintragen. Sonst hält der Updater seine
+   Version für „selbst geändert“ und spielt die offizielle nicht ein.
 3. **Vor jedem Commit:** `python werkzeuge_entwicklung/versionen_erzeugen.py` ausführen (Prüfsummen für den Updater –
    sonst hält der Updater unveränderte Dateien für „selbst geändert“) und die Tests laufen lassen:
    `cd jarvis && python -m unittest discover tests` sowie im Hauptordner `python -m unittest discover tests`.

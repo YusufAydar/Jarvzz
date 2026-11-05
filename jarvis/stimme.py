@@ -28,32 +28,113 @@ $s.Speak($env:JARVIS_TEXT)
 """
 
 _sprech_sperre = threading.Lock()  # damit nie zwei Sätze gleichzeitig gesprochen werden
+_ohr = None            # wird von Ohr() gesetzt, damit wir beim Sprechen aufs Mikrofon hören können
+_aktueller_prozess = None
+_stopp = threading.Event()
+
+
+def _lautstaerke(daten):
+    """RMS-Lautstärke eines 16-Bit-Audioblocks (ohne audioop, läuft auch auf neuem Python)."""
+    import array
+    werte = array.array("h", daten)
+    if not werte:
+        return 0
+    return (sum(w * w for w in werte) / len(werte)) ** 0.5
+
+
+def stoppen():
+    """Lässt Jarvis sofort verstummen (z. B. über den Stopp-Knopf in der Zentrale)."""
+    _stopp.set()
+    prozess = _aktueller_prozess
+    if prozess is not None and prozess.poll() is None:
+        prozess.kill()
+        return True
+    return False
+
+
+def _warten_mit_unterbrechung(prozess):
+    """
+    Wartet, bis die Stimme fertig ist. Bricht ab, wenn der Stopp-Knopf gedrückt wird oder
+    (Idee von Jarvis selbst) jemand deutlich lauter als normal ins Mikrofon spricht.
+    Gibt True zurück, wenn unterbrochen wurde.
+    """
+    if not (einstellungen.UNTERBRECHEN and _ohr is not None):
+        while prozess.poll() is None:
+            if _stopp.wait(0.1):
+                prozess.kill()
+                return True
+        return False
+    pa = stream = None
+    try:
+        import pyaudio
+        pa = pyaudio.PyAudio()
+        rate, block = 16000, 1024
+        stream = pa.open(format=pyaudio.paInt16, channels=1, rate=rate, input=True,
+                         frames_per_buffer=block, input_device_index=getattr(_ohr.mikrofon, "device_index", None))
+        schwelle = max(_ohr.erkenner.energy_threshold * einstellungen.UNTERBRECHEN_FAKTOR, 600)
+        noetig = max(1, int(einstellungen.UNTERBRECHEN_MIN_SEKUNDEN * rate / block))
+        laut_in_folge = bloecke = 0
+        while prozess.poll() is None:
+            if _stopp.is_set():
+                prozess.kill()
+                return True
+            daten = stream.read(block, exception_on_overflow=False)
+            bloecke += 1
+            if bloecke < 8:  # die ersten ~0,5 s ignorieren (Anlaufen der Stimme)
+                continue
+            laut_in_folge = laut_in_folge + 1 if _lautstaerke(daten) > schwelle else 0
+            if laut_in_folge >= noetig:
+                prozess.kill()
+                print("[Unterbrochen – ich höre zu]")
+                return True
+        return False
+    except Exception as fehler:
+        print(f"[Unterbrechen per Mikrofon nicht möglich: {fehler} – der Stopp-Knopf geht trotzdem]")
+        while prozess.poll() is None:
+            if _stopp.wait(0.1):
+                prozess.kill()
+                return True
+        return False
+    finally:
+        for aufraeumen in (lambda: stream.stop_stream(), lambda: stream.close(), lambda: pa.terminate()):
+            try:
+                aufraeumen()
+            except Exception:
+                pass
 
 
 def sprechen(text, nur_text=False):
-    """Zeigt den Text an und liest ihn vor."""
+    """Zeigt den Text an und liest ihn vor. Gibt True zurück, wenn Jarvis unterbrochen wurde."""
+    global _aktueller_prozess
     print(f"Jarvis: {text}")
     if nur_text:
-        return
+        return False
     with _sprech_sperre:
+        _stopp.clear()
         if IST_WINDOWS:
             umgebung = dict(os.environ, JARVIS_TEXT=text, JARVIS_TEMPO=str(einstellungen.SPRECHTEMPO))
-            subprocess.run(["powershell", "-NoProfile", "-Command", POWERSHELL_SPRECHEN],
-                           env=umgebung, creationflags=0x08000000)  # 0x08000000 = kein schwarzes Fenster
-        else:
+            prozess = subprocess.Popen(["powershell", "-NoProfile", "-Command", POWERSHELL_SPRECHEN],
+                                       env=umgebung, creationflags=0x08000000)  # kein schwarzes Fenster
+            _aktueller_prozess = prozess
             try:
-                import pyttsx3  # Ersatz für Mac/Linux, falls installiert
-                engine = pyttsx3.init()
-                engine.say(text)
-                engine.runAndWait()
-            except Exception:
-                pass  # ohne Stimme geht es auch – der Text steht ja auf dem Bildschirm
+                return _warten_mit_unterbrechung(prozess)
+            finally:
+                _aktueller_prozess = None
+        try:
+            import pyttsx3  # Ersatz für Mac/Linux, falls installiert
+            engine = pyttsx3.init()
+            engine.say(text)
+            engine.runAndWait()
+        except Exception:
+            pass  # ohne Stimme geht es auch – der Text steht ja auf dem Bildschirm
+        return False
 
 
 class Ohr:
     """Hört über das Mikrofon zu und macht aus Sprache Text."""
 
     def __init__(self):
+        global _ohr
         import speech_recognition as sr  # erst hier laden, damit der Text-Modus ohne läuft
         self.sr = sr
         self.erkenner = sr.Recognizer()
@@ -62,6 +143,7 @@ class Ohr:
         print("Mikrofon wird eingestellt – bitte kurz still sein ...")
         with self.mikrofon as quelle:
             self.erkenner.adjust_for_ambient_noise(quelle, duration=1.5)
+        _ohr = self
 
     def hoeren(self, warten_sekunden=None, max_satz_sekunden=15):
         """

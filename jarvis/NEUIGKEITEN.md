@@ -4,6 +4,17 @@ Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub:
 Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
 die neuesten Einträge (sie stehen in seiner Grundanweisung).
 
+## 2026-11-06 · Trading-Roboter (Paper-Trading), rotes Farbschema, Unterbrechen beim Sprechen
+Neuer Trading-Roboter (Ordner trader/), läuft in der Zentrale mit: beobachtet XAUUSD, US100 und EURUSD jede Minute,
+entscheidet bei jeder abgeschlossenen 15-Minuten-Kerze BUY/SELL/HOLD/WAIT mit Begründung und Confidence-Score
+(6 nachvollziehbare Teile, noch nicht kalibriert) und handelt nur mit virtuellem Geld (Paper-Trading, Stufe 1,
+Konto 10.000 $, Risiko 1 % pro Trade, Tagesstopp 2 %, max. Drawdown 6 %, Handelszeit 09–21 Uhr, News-Sperre,
+Korrelations-Sperre, Pause nach 3 Verlusten, Not-Aus). Echte Orders sind gesperrt. Neue Werkzeuge: trader_status,
+trader_steuern (pause/fortsetzen/notaus/zuruecksetzen), backtest_starten (mit Kosten, Kalibrierung, Stabilität,
+Monte-Carlo und Urteil) und trading_tagesbericht (automatisch um 21 Uhr). In der Zentrale: Feld AUTO-TRADER und
+ROBOTER-ENTSCHEIDUNGEN. Übernommen von Jarvis: rotes Farbschema (Einstellung FARBSCHEMA) und das Unterbrechen beim
+Sprechen (UNTERBRECHEN), dazu ein STOPP-Knopf in der Zentrale.
+
 ## 2026-11-05 · Trading-Zentrale mit Live-TradingView-Chart und Verbindung zu Claude
 Neue Oberfläche „Jarvis Trading-Zentrale“ (jarvis_zentrale.bat, auch jarvis_oberflaeche.bat startet sie jetzt):
 echter TradingView-Chart in der Mitte (umschaltbar auf den eigenen Jarvis-Chart mit Zonen, Pivots, Positionen),

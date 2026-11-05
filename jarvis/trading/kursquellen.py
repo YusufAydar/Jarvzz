@@ -30,8 +30,8 @@ SYMBOLE = {
 }
 
 # Zeitrahmen -> (Yahoo-Intervall, Zeitraum, wie viele Kerzen zusammengefasst werden)
-YAHOO_ZEITRAHMEN = {"M1": ("1m", "5d", 1), "M5": ("5m", "30d", 1), "M15": ("15m", "30d", 1),
-                    "M30": ("30m", "30d", 1), "H1": ("60m", "180d", 1), "H4": ("60m", "180d", 4),
+YAHOO_ZEITRAHMEN = {"M1": ("1m", "5d", 1), "M5": ("5m", "60d", 1), "M15": ("15m", "60d", 1),
+                    "M30": ("30m", "60d", 1), "H1": ("60m", "180d", 1), "H4": ("60m", "180d", 4),
                     "D1": ("1d", "2y", 1)}
 
 

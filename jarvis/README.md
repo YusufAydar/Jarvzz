@@ -73,6 +73,17 @@ Start: **`jarvis_zentrale.bat`** (auch `jarvis_oberflaeche.bat` und deine Verkn�
 
 Das alte Design startest du mit **`jarvis_altes_design.bat`**.
 
+### 🤖 Der Trading-Roboter (Auto-Trader)
+
+Er läuft in der Zentrale mit und beobachtet **Gold, US100 und EURUSD**. Bei jeder abgeschlossenen 15-Minuten-Kerze entscheidet er **BUY, SELL, HOLD oder WAIT**, immer mit Begründung und **Confidence-Score**. Im Feld **ROBOTER-ENTSCHEIDUNGEN** klickst du eine Entscheidung an und siehst alle Gründe.
+
+- **Stufe 1 = Paper-Trading:** Er handelt nur mit **virtuellem Geld** (10.000 $). **Echte Orders sind gesperrt.**
+- **Feste Grenzen** (in `einstellungen.py`, die der Roboter selbst nicht ändern kann): 1 % Risiko pro Trade, 2 % Tagesstopp, 6 % maximaler Drawdown (dann sperrt er sich), höchstens 2 Positionen, Pause nach 3 Verlusten in Folge, keine Trades 30 Minuten um wichtige News, nur 09–21 Uhr, Positionen werden vor Handelsschluss geschlossen.
+- **Knöpfe:** ⏸ Pause, ⛔ Not-Aus (schließt alle Paper-Positionen) und 🧪 Backtest (testet die Strategie auf historischen Kursen).
+- **Tagesbericht:** Jeden Abend um 21 Uhr in `daten/trading_berichte/`, und Jarvis sagt dir das Ergebnis.
+- **Sprachbefehle:** „Jarvis, wie läuft der Roboter?“, „Warum hast du nicht gekauft?“, „Starte einen Backtest“, „Pausiere den Roboter“.
+- **Der Weg zu echtem Geld (Stufe 2/3):** Erst wenn der Backtest **bestanden** ist **und** im Paper-Trading mindestens 100 Trades mit Profit-Faktor ≥ 1,3 vorliegen. Freischalten tut ihr, nicht der Roboter.
+
 ### 🔗 Verbindung zwischen Jarvis und Claude
 
 - **Jarvis → Claude:** Wenn Jarvis sich selbst verändert (ein Werkzeug baut oder Dateien umbaut), meldet er es mit „an Claude melden“. Seine Änderungen landen mit Bericht im GitHub-Zweig `jarvis-pc`, und Claude liest sie vor jeder Änderung.

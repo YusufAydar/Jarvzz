@@ -1,0 +1,6 @@
+# Dateien, deren Jarvis-Versionen (Zweig jarvis-pc) Claude sauber in jarvis/ übernommen hat.
+# Der Updater darf diese Jarvis-Versionen auf dem PC dann durch die offizielle Version ersetzen
+# (sonst hält er sie für "selbst geändert" und lässt sie stehen).
+# Eine Zeile pro Pfad relativ zu jarvis/.
+zentrale/index.html
+stimme.py
