@@ -13,6 +13,7 @@ Starten: aktualisieren.bat doppelklicken – oder "Jarvis, aktualisiere dich" sa
 import hashlib
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -29,10 +30,32 @@ QUELLEN = [
 NICHT_ANFASSEN = {".env", "meine_einstellungen.py", "daten", "plugins", ".venv", "__pycache__", "sicherungen"}
 
 
+def _env_lesen():
+    """Liest jarvis/.env (für den GitHub-Token bei privaten Repos)."""
+    werte = {}
+    datei = JARVIS_ORDNER / ".env"
+    if datei.exists():
+        for zeile in datei.read_text(encoding="utf-8").splitlines():
+            if "=" in zeile and not zeile.strip().startswith("#"):
+                name, wert = zeile.split("=", 1)
+                werte[name.strip()] = wert.strip().strip('"').strip("'")
+    return werte
+
+
+def quellen():
+    """Bei privatem Repo (GITHUB_TOKEN in .env) über die GitHub-API, sonst die öffentlichen ZIP-Links."""
+    token = os.environ.get("GITHUB_TOKEN") or _env_lesen().get("GITHUB_TOKEN")
+    if token:
+        kopf = {"Authorization": f"Bearer {token}", "User-Agent": "jarvis-updater"}
+        return [(f"https://api.github.com/repos/YusufAydar/Jarvzz/zipball/{zweig}", kopf)
+                for zweig in ("hyperliquid-analyse", "main")]
+    return [(url, {"User-Agent": "jarvis-updater"}) for url in QUELLEN]
+
+
 def herunterladen():
-    for url in QUELLEN:
+    for url, kopf in quellen():
         try:
-            with urllib.request.urlopen(url, timeout=60) as antwort:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=kopf), timeout=60) as antwort:
                 daten = antwort.read()
         except Exception as fehler:
             print(f"  {url} nicht erreichbar ({fehler})")
@@ -40,7 +63,8 @@ def herunterladen():
         archiv = zipfile.ZipFile(io.BytesIO(daten))
         if any(n.split("/")[1:2] == ["jarvis"] for n in archiv.namelist()):
             return archiv, url
-    raise RuntimeError("Keine Jarvis-Version auf GitHub gefunden.")
+    raise RuntimeError("Keine Jarvis-Version auf GitHub gefunden. Ist das Repository privat? Dann "
+                       "GITHUB_TOKEN in jarvis/.env eintragen (siehe README, Abschnitt Updates).")
 
 
 def _pruefsumme(daten):

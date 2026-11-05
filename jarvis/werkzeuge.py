@@ -374,8 +374,13 @@ class Werkzeugkasten:
         if lokal.exists() and time.time() - lokal.stat().st_mtime < 26 * 3600:
             text, quelle = lokal.read_text(encoding="utf-8"), "lokaler Bericht"
         else:
+            url, kopf = einstellungen.HYPERLIQUID_BERICHT_URL, {"User-Agent": "jarvis"}
+            if os.environ.get("GITHUB_TOKEN"):  # privates Repository
+                url = "https://api.github.com/repos/YusufAydar/Jarvzz/contents/berichte/aktuell.md?ref=main"
+                kopf.update({"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                             "Accept": "application/vnd.github.raw"})
             try:
-                with urllib.request.urlopen(einstellungen.HYPERLIQUID_BERICHT_URL, timeout=20) as antwort:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=kopf), timeout=20) as antwort:
                     text, quelle = antwort.read().decode("utf-8"), "Bericht von GitHub"
             except Exception as fehler:
                 if lokal.exists():

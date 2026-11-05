@@ -112,6 +112,8 @@ Ein selbstgebautes Werkzeug entfernst du, indem du seine Datei in `plugins/` lö
 ## 🔄 Updates
 
 - **Doppelklick auf `aktualisieren.bat`**, oder du sagst **„Jarvis, aktualisiere dich“**. Jarvis holt dann die neueste Version von GitHub und installiert neue Pakete. Danach startest du Jarvis neu.
+- **Privates Repository?** Dann braucht Jarvis einen Lese-Schlüssel: Auf GitHub → Profilbild → *Settings* → *Developer settings* → *Personal access tokens* → *Fine-grained tokens* → *Generate new token*. Bei *Repository access* nur **Jarvzz** auswählen, bei *Permissions* → *Contents* **Read-only**. Den Token in die `.env` als `GITHUB_TOKEN=github_pat_...` eintragen.
+- Vor jedem Update wird der Jarvis-Ordner in `sicherungen/` gesichert. Dateien, die du oder Jarvis selbst geändert habt, bleiben stehen. Die neue Version liegt dann daneben als `.neu`.
 - **Nicht** überschrieben werden: `.env` (Schlüssel), `meine_einstellungen.py`, `daten/` (Termine), `plugins/` (selbstgebaute Werkzeuge).
 
 ## Anpassen (in `meine_einstellungen.py`)
