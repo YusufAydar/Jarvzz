@@ -111,6 +111,21 @@ WERKZEUG_BESCHREIBUNGEN = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "mt5_zugang_speichern",
+        "description": "Speichert die MetaTrader-5-Zugangsdaten (z. B. FTMO) dauerhaft in Jarvis' .env-Datei "
+                       "und testet sofort die Verbindung. Benutze das, wenn der Nutzer dir Login, Passwort und "
+                       "Server gibt. Wiederhole das Passwort niemals in deiner Antwort.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "login": {"type": "string", "description": "Kontonummer, nur Ziffern"},
+                "passwort": {"type": "string"},
+                "server": {"type": "string", "description": "z. B. 'FTMO-Demo'"},
+            },
+            "required": ["login", "passwort", "server"],
+        },
+    },
+    {
         "name": "programm_oeffnen",
         "description": "Öffnet ein Programm oder eine App, die auf dem PC installiert ist "
                        "(alles aus dem Startmenü, z. B. Discord, Steam, WhatsApp, Spotify, Word, "
@@ -321,6 +336,25 @@ class Werkzeugkasten:
                           f"H1 {indikatoren.trend(h1)} | RSI {r:.0f}")
         return "\n".join(zeilen)
 
+    def _mt5_zugang_speichern(self, login, passwort, server):
+        login = str(login).strip()
+        if not login.isdigit():
+            return "Die Login-Nummer darf nur aus Ziffern bestehen."
+        if not self.bestaetigen("einstellung", f"MT5-Zugang speichern: Login {login}, Server {server}",
+                                "Login, Passwort und Server werden in jarvis/.env gespeichert "
+                                "(nur auf diesem PC, das Passwort wird hier nicht angezeigt)."):
+            return "Der Nutzer hat das Speichern abgelehnt."
+        env_datei_schreiben(einstellungen.JARVIS_ORDNER / ".env",
+                            {"MT5_LOGIN": login, "MT5_PASSWORT": passwort, "MT5_SERVER": server.strip()})
+        from trading import mt5_verbindung as mt
+        mt.neu_verbinden()
+        try:
+            konto = mt.kontostand()
+        except mt.MT5Fehler as fehler:
+            return f"Gespeichert, aber die Verbindung klappt noch nicht: {fehler}"
+        return (f"Gespeichert und verbunden mit Konto {konto['login']} ({konto['server']}), "
+                f"Balance {konto['balance']:.2f} {konto['waehrung']}.")
+
     def _konto_status(self):
         from trading import mt5_verbindung as mt
         try:
@@ -448,6 +482,16 @@ class Werkzeugkasten:
             return "PC sperren geht nur unter Windows."
         ctypes.windll.user32.LockWorkStation()
         return "Bildschirm gesperrt."
+
+
+def env_datei_schreiben(datei, werte):
+    """Setzt Einträge in der .env-Datei (vorhandene werden ersetzt, andere bleiben unverändert)."""
+    datei = Path(datei)
+    zeilen = datei.read_text(encoding="utf-8").splitlines() if datei.exists() else []
+    rest = [z for z in zeilen if z.split("=", 1)[0].strip().lstrip("# ").strip() not in werte]
+    rest += [f"{name}={wert}" for name, wert in werte.items()]
+    datei.write_text("\n".join(rest) + "\n", encoding="utf-8")
+    os.environ.update(werte)
 
 
 def youtube_erstes_video(suche, html=None):

@@ -53,6 +53,14 @@ def verbinden():
                         "Ist MT5 geöffnet und mit deinem Konto angemeldet?")
 
 
+def neu_verbinden():
+    """Trennt die Verbindung, damit beim nächsten Zugriff mit den neuen Zugangsdaten angemeldet wird."""
+    if mt5 is not None:
+        with _sperre:
+            mt5.shutdown()
+        _symbol_cache.clear()
+
+
 def symbol_finden(name):
     """
     Findet den genauen Symbolnamen beim Broker. Bei FTMO heißen Indizes z. B. "US30.cash".

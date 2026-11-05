@@ -120,6 +120,9 @@ class FakeMT5:
     def last_error(self):
         return (0, "ok")
 
+    def shutdown(self):
+        pass
+
 
 class TestWerkzeuge(unittest.TestCase):
     def setUp(self):
@@ -150,6 +153,23 @@ class TestWerkzeuge(unittest.TestCase):
         text = self.kasten.ausfuehren("konto_status", {})
         self.assertIn("Equity 9900.00 USD", text)
         self.assertIn("SL KEINER", text)
+
+    def test_mt5_zugang_speichern(self):
+        env = Path(self.tmp.name) / ".env"
+        env.write_text("ANTHROPIC_API_KEY=sk-ant-geheim\nMT5_LOGIN=111\n", encoding="utf-8")
+        gefragt = []
+        self.kasten.bestaetigen = lambda art, beschreibung, details: (gefragt.append(beschreibung + details), True)[1]
+        with mock.patch.object(einstellungen, "JARVIS_ORDNER", Path(self.tmp.name)), \
+             mock.patch.dict("os.environ", {}, clear=False):
+            text = self.kasten.ausfuehren("mt5_zugang_speichern",
+                                          {"login": "1515", "passwort": "Pw!123", "server": "FTMO-Demo"})
+        inhalt = env.read_text(encoding="utf-8")
+        self.assertIn("ANTHROPIC_API_KEY=sk-ant-geheim", inhalt)   # API-Schlüssel bleibt
+        self.assertIn("MT5_LOGIN=1515", inhalt)
+        self.assertNotIn("MT5_LOGIN=111", inhalt)                    # alter Eintrag ersetzt
+        self.assertIn("MT5_PASSWORT=Pw!123", inhalt)
+        self.assertIn("verbunden mit Konto 123", text)
+        self.assertNotIn("Pw!123", text + "".join(gefragt))          # Passwort wird nirgends angezeigt
 
     def test_ohne_mt5_klare_meldung(self):
         with mock.patch.object(mt, "mt5", None):

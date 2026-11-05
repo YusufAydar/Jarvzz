@@ -47,7 +47,7 @@ WERKZEUG_NAMEN = {
     "programm_schliessen": "Programm geschlossen", "youtube_abspielen": "YouTube",
     "spotify_suchen": "Spotify", "markt_analyse": "Marktanalyse", "maerkte_ueberblick": "Marktüberblick",
     "konto_status": "Kontostand geprüft", "befehl_ausfuehren": "Befehl",
-    "werkzeug_erstellen": "Neues Werkzeug", "jarvis_aktualisieren": "Update",
+    "werkzeug_erstellen": "Neues Werkzeug", "jarvis_aktualisieren": "Update", "mt5_zugang_speichern": "MT5-Zugang gespeichert",
     "medien_steuern": "Medien gesteuert", "datei_suchen": "Dateien gesucht",
     "datei_oeffnen": "Datei geöffnet", "pc_sperren": "PC gesperrt",
 }
