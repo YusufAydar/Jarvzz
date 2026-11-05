@@ -47,8 +47,25 @@ Zum Beenden: **„Jarvis, beenden“** oder **Strg + C**.
 > Sie ist so eingestellt, dass Git sie automatisch ignoriert.
 
 ### Schritt 5: Starten
-- **`jarvis_starten.bat`** doppelklicken: Sprachmodus mit Mikrofon.
+- **`jarvis_oberflaeche.bat`** doppelklicken: Dashboard mit Reaktor, Wetter, Märkten, Terminen und Log. Mikrofon und Tippen gehen beide. **Empfohlen.**
+- **`jarvis_starten.bat`** doppelklicken: nur Sprache, im schwarzen Fenster.
 - **`jarvis_text.bat`** doppelklicken: Textmodus, du tippst statt zu sprechen. Gut für den ersten Test.
+
+### Die Oberfläche
+
+| Feld | Was es zeigt |
+|---|---|
+| **Reaktor** | Jarvis' Zustand: blau = bereit, grün = hört zu, orange = denkt nach, hell pulsierend = spricht. Darunter das Gespräch und ein Feld zum Tippen. Mit **🎙 MIKRO** schaltest du das Mikrofon an und aus. |
+| **Wetter** | Aktuelles Wetter und die nächsten Tage. Den Ort stellst du in `einstellungen.py` bei `WETTER_ORT` ein. |
+| **System / Netz** | Auslastung von CPU, Arbeitsspeicher und Festplatte sowie Up- und Download. |
+| **Wächter** | Fällige Erinnerungen, große Kursbewegungen (ab 5 %) und deine anstehenden Termine. |
+| **Agent-Aktivität** | Was Jarvis gerade macht, z. B. welche Werkzeuge er benutzt. |
+| **Märkte** | Live-Kurse von Hyperliquid. Die Coins stellst du in `einstellungen.py` bei `MARKT_COINS` ein. |
+| **Briefing** | Wo sich die Top-Trader laut Tagesbericht einig sind. |
+
+Mit der Leiste unten blendest du Felder ein und aus. Die Oberfläche läuft nur auf deinem PC (`127.0.0.1`) und ist von außen nicht erreichbar.
+
+**Nach einem Update** mit neuen Dateien einmal **`aktualisieren.bat`** doppelklicken. Das installiert neue Pakete, deine `.env` bleibt erhalten.
 
 ---
 
@@ -56,6 +73,9 @@ Zum Beenden: **„Jarvis, beenden“** oder **Strg + C**.
 
 | Datei | Wofür ist sie da? |
 |---|---|
+| `oberflaeche.py` | **Startpunkt mit Dashboard.** Kleiner Webserver nur auf deinem PC, liefert Wetter, Kurse, Systemwerte und leitet deine Befehle an Jarvis weiter. |
+| `oberflaeche/index.html` | **Das Aussehen des Dashboards** (Reaktor-Animation, alle Felder). |
+| `jarvis_oberflaeche.bat` / `aktualisieren.bat` | Doppelklicken: Dashboard starten / nach einem Update neue Pakete installieren. |
 | `jarvis.py` | **Startpunkt.** Hört zu, erkennt „Jarvis“, gibt die Frage ans Gehirn und spricht die Antwort. |
 | `gehirn.py` | **Verbindung zu Claude.** Schickt deine Frage hin, führt gewünschte Werkzeuge aus und holt die Antwort. Enthält auch Jarvis' „Persönlichkeit“ (die Anweisung, wie er sich verhalten soll). |
 | `werkzeuge.py` | **Was Jarvis tun kann.** Termine, Hyperliquid-Bericht, Programme öffnen, Lautstärke, Musik, Dateien, PC sperren. Jarvis kann *nur*, was hier steht. |

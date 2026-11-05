@@ -111,9 +111,11 @@ class TestGehirn(unittest.TestCase):
                 "art": "erinnerung", "text": "Pizza holen", "zeitpunkt": "2026-11-05T19:30"})),
             antwort("end_turn", text_block("Ich erinnere dich um halb acht.")),
         ])
-        g = gehirn.Gehirn(self.kasten, client=client)
+        benutzt = []
+        g = gehirn.Gehirn(self.kasten, client=client, beobachter=lambda n, e: benutzt.append(n))
         self.assertEqual(g.frage("Erinnere mich um 19:30 an die Pizza"),
                          "Ich erinnere dich um halb acht.")
+        self.assertEqual(benutzt, ["termin_eintragen"])  # die Oberfläche wird informiert
         self.assertEqual(self.kalender.auflisten()[0]["text"], "Pizza holen")
         # Zweite Anfrage enthält das Werkzeug-Ergebnis
         ergebnis = client.anfragen[1]["messages"][-1]["content"][0]

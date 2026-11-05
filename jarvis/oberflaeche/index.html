@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J.A.R.V.I.S.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: Kopfzeile, darunter Raster aus Feldern (links Umwelt, Mitte Reaktor, rechts Ereignisse), unten Leiste */
+:root{
+  --bg:#060b0e; --panel:#0b151a; --panel2:#0e1c22; --linie:#163039; --linie-hell:#1f4a57;
+  --text:#cfe9ef; --dim:#5f8691; --cyan:#3fd8ff; --gruen:#3dffb0; --amber:#ffb547; --rot:#ff5a6a;
+  --mono:"Share Tech Mono",ui-monospace,Consolas,monospace;
+  --sans:"Rajdhani","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 40%,#0a1a20 0%,var(--bg) 70%);color:var(--text);font-family:var(--sans);font-size:15px;overflow:hidden;display:flex;flex-direction:column}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(63,216,255,.025) 0 1px,transparent 1px 3px)}
+
+/* Kopfzeile */
+header{display:flex;align-items:center;gap:22px;padding:10px 18px;border-bottom:1px solid var(--linie);flex-wrap:wrap}
+.logo{font-family:var(--mono);font-size:22px;letter-spacing:.35em;color:var(--cyan);text-shadow:0 0 12px rgba(63,216,255,.5)}
+.untertitel{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--dim)}
+.kopf-rechts{margin-left:auto;display:flex;gap:22px;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);flex-wrap:wrap}
+.kopf-rechts b{color:var(--text);font-weight:400}
+.status-punkt{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gruen);box-shadow:0 0 8px var(--gruen);margin-right:6px;vertical-align:1px}
+#uhr{font-size:20px;color:var(--cyan);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+
+/* Raster */
+main{flex:1;min-height:0;display:grid;gap:12px;padding:12px 16px;
+  grid-template-columns:minmax(230px,1fr) minmax(320px,2.1fr) minmax(250px,1.2fr) minmax(240px,1fr);
+  grid-template-rows:minmax(0,1fr);}
+.spalte{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.feld{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--linie);position:relative;display:flex;flex-direction:column;min-height:0}
+.feld::before,.feld::after{content:"";position:absolute;width:10px;height:10px;border-color:var(--cyan);border-style:solid;opacity:.7}
+.feld::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.feld::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.feld[hidden]{display:none!important}
+.feld-kopf{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--linie);font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--dim)}
+.feld-kopf .titel::before{content:"[ ";color:var(--cyan)} .feld-kopf .titel::after{content:" ]";color:var(--cyan)}
+.feld-kopf .titel{color:var(--cyan)}
+.feld-kopf .extra{margin-left:auto;letter-spacing:.1em}
+.feld-kopf button.zu{background:none;border:0;color:var(--dim);cursor:pointer;font-size:14px;padding:0 2px;margin-left:auto}
+.feld-kopf .extra ~ button.zu{margin-left:6px}
+.feld-kopf button.zu:hover{color:var(--text)}
+.inhalt{padding:12px;min-height:0;overflow:auto}
+.inhalt::-webkit-scrollbar{width:6px}.inhalt::-webkit-scrollbar-thumb{background:var(--linie-hell)}
+.dim{color:var(--dim)} .mono{font-family:var(--mono)}
+.leer{color:var(--dim);font-family:var(--mono);font-size:12px}
+
+/* Wetter */
+.wetter-oben{display:flex;align-items:center;gap:14px}
+.wetter-temp{font-size:44px;font-weight:600;line-height:1}
+.wetter-zeile{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:10px}
+.wetter-zeile b{color:var(--text);font-weight:400}
+.tage{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.tag{border:1px solid var(--linie);padding:6px 4px;text-align:center;font-family:var(--mono);font-size:11px}
+.tag .sym{font-size:18px;color:var(--cyan);margin:3px 0}
+.tag .regen{color:var(--cyan);font-size:10px}
+
+/* Balken */
+.balken-zeile{display:grid;grid-template-columns:44px 1fr 52px;gap:10px;align-items:center;font-family:var(--mono);font-size:12px;margin:7px 0}
+.balken{height:5px;background:var(--linie);position:relative;overflow:hidden}
+.balken i{position:absolute;inset:0 auto 0 0;background:var(--amber);box-shadow:0 0 8px var(--amber);transition:width .6s}
+.balken-zeile span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+canvas.kurve{width:100%;height:42px;display:block}
+.netz-zeile{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:6px}
+.netz-zeile b{color:var(--text);font-weight:400;font-variant-numeric:tabular-nums}
+
+/* Reaktor */
+#feld-reaktor .inhalt{display:flex;flex-direction:column;align-items:center;flex:1;padding:8px 14px 14px;overflow:hidden}
+#reaktor{width:100%;flex:1;min-height:220px;display:block}
+#modus-text{font-family:var(--mono);letter-spacing:.45em;font-size:13px;color:var(--cyan);margin:4px 0 10px;text-align:center}
+#dialog{width:100%;max-height:28%;min-height:70px;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:15px;padding-right:4px}
+.zeile-du{align-self:flex-end;color:var(--dim);text-align:right;max-width:85%}
+.zeile-jarvis{align-self:flex-start;max-width:90%;border-left:2px solid var(--cyan);padding-left:8px}
+.eingabe{display:flex;gap:8px;width:100%;margin-top:10px}
+.eingabe input{flex:1;min-width:0;background:transparent;border:1px solid var(--linie-hell);color:var(--text);font:inherit;font-family:var(--mono);font-size:13px;padding:9px 10px;outline:none}
+.eingabe input:focus{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset}
+.knopf{background:transparent;border:1px solid var(--linie-hell);color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.15em;padding:0 12px;cursor:pointer;white-space:nowrap}
+.knopf:hover,.knopf:focus-visible{border-color:var(--cyan);outline:none}
+.knopf.aus{color:var(--dim)}
+
+/* Wächter */
+.meldung{border:1px solid rgba(255,181,71,.35);background:rgba(255,181,71,.06);padding:8px 28px 8px 10px;margin-bottom:8px;position:relative}
+.meldung.markt-runter{border-color:rgba(255,90,106,.35);background:rgba(255,90,106,.05)}
+.meldung.termin-plan{border-color:var(--linie-hell);background:rgba(63,216,255,.04)}
+.meldung .kat{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--dim)}
+.meldung .kat::before{content:"●";color:var(--amber);margin-right:6px}
+.meldung.termin-plan .kat::before{color:var(--cyan)}
+.meldung.markt-runter .kat::before{color:var(--rot)}
+.meldung .t{color:var(--amber);font-weight:600;font-size:16px}
+.meldung.termin-plan .t{color:var(--text)}
+.meldung.markt-runter .t{color:var(--rot)}
+.meldung .x{position:absolute;top:6px;right:6px;background:none;border:0;color:var(--dim);cursor:pointer}
+.zwischentitel{font-family:var(--mono);font-size:10px;letter-spacing:.25em;color:var(--dim);margin:4px 0 8px}
+
+/* Log */
+#log{font-family:var(--mono);font-size:12px;line-height:1.6}
+#log div{display:grid;grid-template-columns:64px 1fr;gap:6px}
+#log .z{color:var(--dim)} .log-werkzeug{color:var(--cyan)} .log-fehler{color:var(--rot)} .log-ok{color:var(--gruen)} .log-befehl{color:var(--text)} .log-termin{color:var(--amber)}
+.cursor::after{content:"_";animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* Märkte */
+.kurse{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kurs{border:1px solid var(--linie);padding:8px 10px}
+.kurs .c{font-weight:700;font-size:16px}
+.kurs .p{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.hoch{color:var(--gruen)} .runter{color:var(--rot)}
+
+/* Briefing */
+.brief-zeile{font-size:15px;padding:5px 0;border-bottom:1px solid var(--linie)}
+.brief-zeile:last-child{border:0}
+
+/* Leiste unten */
+footer{display:flex;gap:6px;padding:8px 16px;border-top:1px solid var(--linie);flex-wrap:wrap;align-items:center}
+footer button{background:transparent;border:1px solid var(--linie-hell);color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:5px 9px;cursor:pointer}
+footer button[aria-pressed="false"]{color:var(--dim);border-color:var(--linie)}
+footer .rechts{margin-left:auto}
+
+/* Schmale Fenster: alles untereinander und scrollbar */
+@media (max-width:1100px){
+  body{overflow:auto;height:auto}
+  main{grid-template-columns:1fr 1fr;grid-template-rows:none}
+  .spalte-mitte{grid-column:1/-1;order:-1}
+  #feld-reaktor{min-height:520px}
+}
+@media (max-width:700px){main{grid-template-columns:1fr} .untertitel{display:none}}
+@media (prefers-reduced-motion:reduce){.cursor::after{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">J.A.R.V.I.S</div>
+  <div class="untertitel">// DEIN PERSÖNLICHER ASSISTENT</div>
+  <div class="kopf-rechts">
+    <span>HOST <b id="host">–</b></span>
+    <span>OS <b id="os">–</b></span>
+    <span>MODUS <b id="modus-kopf">–</b></span>
+    <span>MIKRO <b id="mikro-kopf">–</b></span>
+    <span><i class="status-punkt" id="online-punkt"></i><b id="online">ONLINE</b></span>
+    <span id="uhr">--:--:--</span>
+  </div>
+</header>
+
+<main>
+  <div class="spalte">
+    <section class="feld" id="feld-wetter" data-name="WETTER">
+      <div class="feld-kopf"><span class="titel">WETTER</span><span class="extra" id="wetter-ort"></span><button class="zu" aria-label="Wetter ausblenden">✕</button></div>
+      <div class="inhalt" id="wetter"><div class="leer">lade …</div></div>
+    </section>
+    <section class="feld" id="feld-system" data-name="SYSTEM">
+      <div class="feld-kopf"><span class="titel">SYSTEM</span><button class="zu" aria-label="System ausblenden">✕</button></div>
+      <div class="inhalt" id="system"><div class="leer">lade …</div></div>
+    </section>
+    <section class="feld" id="feld-netz" data-name="NETZ">
+      <div class="feld-kopf"><span class="titel">NETZ</span><button class="zu" aria-label="Netz ausblenden">✕</button></div>
+      <div class="inhalt">
+        <div class="netz-zeile"><span>▼ RX</span><b id="rx">–</b></div>
+        <canvas class="kurve" id="kurve-rx"></canvas>
+        <div class="netz-zeile"><span>▲ TX</span><b id="tx">–</b></div>
+        <canvas class="kurve" id="kurve-tx"></canvas>
+      </div>
+    </section>
+  </div>
+
+  <div class="spalte spalte-mitte">
+    <section class="feld" id="feld-reaktor" data-name="REAKTOR" style="flex:1">
+      <div class="feld-kopf"><span class="titel">REAKTOR</span><button class="knopf" id="mikro-knopf" style="margin-left:auto;padding:3px 10px">🎙 MIKRO AN</button></div>
+      <div class="inhalt">
+        <canvas id="reaktor" aria-label="Jarvis-Zustandsanzeige"></canvas>
+        <div id="modus-text">BEREIT FÜR BEFEHLE</div>
+        <div id="dialog" aria-live="polite"></div>
+        <form class="eingabe" id="eingabe">
+          <input id="frage" autocomplete="off" placeholder="Befehl eingeben … z. B. „Was machen die Top-Trader?“">
+          <button class="knopf" type="submit">SENDEN</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="spalte">
+    <section class="feld" id="feld-waechter" data-name="WÄCHTER" style="flex:1">
+      <div class="feld-kopf"><span class="titel">WÄCHTER</span><button class="knopf extra" id="alle-quittieren" style="padding:2px 8px;font-size:10px">0 OFFEN · ALLE QUITTIEREN</button><button class="zu" aria-label="Wächter ausblenden">✕</button></div>
+      <div class="inhalt" id="waechter"></div>
+    </section>
+  </div>
+
+  <div class="spalte">
+    <section class="feld" id="feld-log" data-name="AGENT-LOG" style="flex:1.2">
+      <div class="feld-kopf"><span class="titel">AGENT-AKTIVITÄT</span><span class="extra" id="log-zahl"></span><button class="zu" aria-label="Log ausblenden">✕</button></div>
+      <div class="inhalt" id="log"></div>
+    </section>
+    <section class="feld" id="feld-maerkte" data-name="MÄRKTE">
+      <div class="feld-kopf"><span class="titel">MÄRKTE</span><span class="extra">HYPERLIQUID</span><button class="zu" aria-label="Märkte ausblenden">✕</button></div>
+      <div class="inhalt" id="maerkte"><div class="leer">lade …</div></div>
+    </section>
+    <section class="feld" id="feld-briefing" data-name="BRIEFING" style="flex:1">
+      <div class="feld-kopf"><span class="titel">BRIEFING</span><span class="extra">TOP-TRADER</span><button class="zu" aria-label="Briefing ausblenden">✕</button></div>
+      <div class="inhalt" id="briefing"><div class="leer">lade …</div></div>
+    </section>
+  </div>
+</main>
+
+<footer id="leiste"><button class="rechts" id="alle-zeigen">↺ ALLE ZEIGEN</button></footer>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const zahl=(x,n=2)=>Number(x).toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+async function holen(url){const r=await fetch(url,{cache:'no-store'});return r.json()}
+async function senden(url,daten){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Jarvis':'1'},body:JSON.stringify(daten)})}
+
+/* ---------- Felder ein-/ausblenden (wird im Browser gemerkt) ---------- */
+const felder=[...document.querySelectorAll('.feld')];
+let versteckt=[];try{versteckt=JSON.parse(localStorage.getItem('jarvis-versteckt')||'[]')}catch(e){}
+function felderAnwenden(){felder.forEach(f=>{f.hidden=versteckt.includes(f.id)});
+  document.querySelectorAll('#leiste [data-feld]').forEach(b=>b.setAttribute('aria-pressed',!versteckt.includes(b.dataset.feld)));
+  try{localStorage.setItem('jarvis-versteckt',JSON.stringify(versteckt))}catch(e){}}
+felder.forEach(f=>{const b=document.createElement('button');b.textContent=f.dataset.name;b.dataset.feld=f.id;
+  b.onclick=()=>{versteckt=versteckt.includes(f.id)?versteckt.filter(x=>x!==f.id):[...versteckt,f.id];felderAnwenden()};
+  $('leiste').insertBefore(b,$('alle-zeigen'));
+  const zu=f.querySelector('.zu');if(zu)zu.onclick=()=>{versteckt.push(f.id);felderAnwenden()}});
+$('alle-zeigen').onclick=()=>{versteckt=[];felderAnwenden()};
+felderAnwenden();
+
+/* ---------- Uhr ---------- */
+setInterval(()=>{$('uhr').textContent=new Date().toLocaleTimeString('de-DE')},1000);
+
+/* ---------- Reaktor-Animation ---------- */
+const FARBEN={bereit:[63,216,255],hoert:[61,255,176],denkt:[255,181,71],spricht:[120,232,255]};
+const TEXTE={bereit:'BEREIT FÜR BEFEHLE',hoert:'ICH HÖRE ZU',denkt:'VERARBEITE …',spricht:'SPRICHT',aus:'MIKROFON AUS · TIPPEN MÖGLICH'};
+let modus='bereit', mikroAn=true, farbe=[...FARBEN.bereit];
+const cv=$('reaktor'),cx=cv.getContext('2d');
+const ruhig=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function reaktor(t){
+  const dpr=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}
+  cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
+  const ziel=FARBEN[modus]||FARBEN.bereit;farbe=farbe.map((c,i)=>c+(ziel[i]-c)*.06);
+  const [r,g,b]=farbe.map(Math.round),col=a=>`rgba(${r},${g},${b},${a})`;
+  const s=ruhig?0:t/1000, tempo={bereit:.25,hoert:.5,denkt:1.6,spricht:.6}[modus]||.25;
+  const R=Math.min(w,h)*.44, mx=w/2, my=h/2;
+  const puls=modus==='spricht'?.5+.5*Math.abs(Math.sin(s*9)*Math.sin(s*3.3)):modus==='hoert'?.5+.5*Math.sin(s*4):.5+.15*Math.sin(s*1.5);
+  cx.lineCap='round';
+  // äußerer Ring mit Skala
+  cx.strokeStyle=col(.35);cx.lineWidth=1;cx.beginPath();cx.arc(mx,my,R,0,7);cx.stroke();
+  for(let i=0;i<120;i++){const a=i/120*Math.PI*2+s*.05*tempo,l=i%10===0?10:4;
+    cx.strokeStyle=col(i%10===0?.7:.3);cx.beginPath();cx.moveTo(mx+Math.cos(a)*(R-2),my+Math.sin(a)*(R-2));cx.lineTo(mx+Math.cos(a)*(R-2-l),my+Math.sin(a)*(R-2-l));cx.stroke()}
+  // rotierende Bögen
+  const boegen=[[.86,3,-.6,[0,.9,1.6,2.4,3.3,4.4,5.2]],[.74,6,1,[.2,1.4,3.1,4.6]],[.62,2,-1.4,[0,1.1,2.2,3.3,4.4,5.5]],[.5,4,2,[.5,2.6,4.3]]];
+  boegen.forEach(([f,lw,dir,starts],k)=>{cx.lineWidth=lw;cx.strokeStyle=col(.35+.4*(k%2?puls:.6));
+    starts.forEach(st=>{const a=st+s*dir*tempo*.6;cx.beginPath();cx.arc(mx,my,R*f,a,a+.55);cx.stroke()})});
+  // gestrichelter Ring
+  cx.setLineDash([2,6]);cx.lineWidth=1;cx.strokeStyle=col(.5);cx.beginPath();cx.arc(mx,my,R*.93,0,7);cx.stroke();cx.setLineDash([]);
+  // Sechseck
+  cx.lineWidth=2;cx.strokeStyle=col(.75);cx.beginPath();
+  for(let i=0;i<=6;i++){const a=i/6*Math.PI*2+s*.3*tempo;const rr=R*.34;i?cx.lineTo(mx+Math.cos(a)*rr,my+Math.sin(a)*rr):cx.moveTo(mx+Math.cos(a)*rr,my+Math.sin(a)*rr)}cx.stroke();
+  cx.lineWidth=1;cx.strokeStyle=col(.35);cx.beginPath();
+  for(let i=0;i<=6;i++){const a=i/6*Math.PI*2-s*.4*tempo+.5;const rr=R*.27;i?cx.lineTo(mx+Math.cos(a)*rr,my+Math.sin(a)*rr):cx.moveTo(mx+Math.cos(a)*rr,my+Math.sin(a)*rr)}cx.stroke();
+  // Kern
+  const kern=R*(.13+.04*puls);const gr=cx.createRadialGradient(mx,my,0,mx,my,kern*3.2);
+  gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.25,col(.9));gr.addColorStop(.6,col(.25));gr.addColorStop(1,col(0));
+  cx.fillStyle=gr;cx.beginPath();cx.arc(mx,my,kern*3.2,0,7);cx.fill();
+  cx.fillStyle='rgba(255,255,255,.95)';cx.beginPath();cx.arc(mx,my,kern*.55,0,7);cx.fill();
+  requestAnimationFrame(reaktor);
+}
+requestAnimationFrame(reaktor);
+
+/* ---------- Netz-Kurven ---------- */
+const verlauf={rx:[],tx:[]};
+function kurve(id,werte,farbe){const c=$(id),d=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(!w)return;
+  c.width=w*d;c.height=h*d;const k=c.getContext('2d');k.scale(d,d);const max=Math.max(...werte,1);
+  k.strokeStyle=farbe;k.lineWidth=1.5;k.beginPath();
+  werte.forEach((v,i)=>{const x=i/(Math.max(werte.length-1,1))*w,y=h-3-(v/max)*(h-8);i?k.lineTo(x,y):k.moveTo(x,y)});k.stroke()}
+
+/* ---------- Zustand (jede Sekunde) ---------- */
+let letzterDialog='';
+async function zustandLaden(){
+  try{
+    const z=await holen('/api/zustand');
+    $('online').textContent='ONLINE';$('online-punkt').style.background='';
+    modus=z.modus;mikroAn=z.mikro_an;
+    const anzeige=(modus==='bereit'&&!mikroAn)?'aus':modus;
+    $('modus-text').textContent=TEXTE[anzeige];
+    $('modus-kopf').textContent=modus.toUpperCase();
+    $('mikro-kopf').textContent=mikroAn?'AN':'AUS';
+    $('mikro-knopf').textContent=mikroAn?'🎙 MIKRO AN':'🎙 MIKRO AUS';
+    $('mikro-knopf').classList.toggle('aus',!mikroAn);
+    $('mikro-knopf').title=z.mikro_fehler||'';
+    $('host').textContent=z.host;$('os').textContent=z.os;
+
+    // Dialog
+    const d=JSON.stringify(z.dialog);
+    if(d!==letzterDialog){letzterDialog=d;
+      $('dialog').innerHTML=z.dialog.map(e=>`<div class="zeile-${e.wer}">${esc(e.text)}</div>`).join('');
+      $('dialog').scrollTop=1e9}
+
+    // System
+    const s=z.system;
+    if(s.fehler){$('system').innerHTML=`<div class="leer">${esc(s.fehler)}</div>`}
+    else{$('system').innerHTML=[['CPU',s.cpu],['RAM',s.ram],['DISK',s.disk]].map(([n,v])=>
+      `<div class="balken-zeile"><span class="dim">${n}</span><div class="balken"><i style="width:${v}%"></i></div><span>${zahl(v,1)} %</span></div>`).join('');
+      verlauf.rx.push(s.rx);verlauf.tx.push(s.tx);verlauf.rx=verlauf.rx.slice(-60);verlauf.tx=verlauf.tx.slice(-60);
+      $('rx').textContent=zahl(s.rx,1)+' KB/s';$('tx').textContent=zahl(s.tx,1)+' KB/s';
+      kurve('kurve-rx',verlauf.rx,'#3fd8ff');kurve('kurve-tx',verlauf.tx,'#b98cff')}
+
+    // Wächter: Meldungen + kommende Termine
+    const meld=z.meldungen.map(m=>{const runter=m.kategorie==='markt'&&m.titel.includes('▼');
+      return `<div class="meldung ${runter?'markt-runter':''}"><div class="kat">${esc(m.kategorie.toUpperCase())} · ${vorZeit(m.zeit)}</div><div class="t">${esc(m.titel)}</div>${m.text?`<div class="dim">${esc(m.text)}</div>`:''}<button class="x" data-id="${m.id}" aria-label="Quittieren">✕</button></div>`}).join('');
+    const term=z.termine.map(e=>`<div class="meldung termin-plan"><div class="kat">${e.art.toUpperCase()} · ${esc(e.zeit.slice(8,10)+'.'+e.zeit.slice(5,7)+'. '+e.zeit.slice(11,16))} UHR</div><div class="t">${esc(e.text)}</div></div>`).join('');
+    $('waechter').innerHTML=(meld||'')+`<div class="zwischentitel">ANSTEHEND</div>`+(term||'<div class="leer">Keine Termine. Sag z. B. „Jarvis, erinnere mich morgen um 9 an …“</div>');
+    $('alle-quittieren').textContent=`${z.meldungen.length} OFFEN · ALLE QUITTIEREN`;
+
+    // Log
+    $('log').innerHTML=z.log.slice().reverse().map(l=>`<div><span class="z">${esc(l.zeit)}</span><span class="log-${l.art}">${esc(l.text)}</span></div>`).join('')+'<div><span class="z"></span><span class="dim cursor">warte auf Aktivität</span></div>';
+    $('log-zahl').textContent=z.log.length+' LOG';
+  }catch(e){$('online').textContent='OFFLINE';$('online-punkt').style.background='var(--rot)';modus='bereit';$('modus-text').textContent='KEINE VERBINDUNG ZU JARVIS'}
+}
+function vorZeit(sek){const m=Math.round((Date.now()/1000-sek)/60);return m<1?'JETZT':m<60?`VOR ${m} MIN`:`VOR ${Math.round(m/60)} STD`}
+setInterval(zustandLaden,1000);zustandLaden();
+
+$('waechter').onclick=e=>{const id=e.target.dataset?.id;if(id)senden('/api/quittieren',{id:+id}).then(zustandLaden)};
+$('alle-quittieren').onclick=()=>senden('/api/quittieren',{}).then(zustandLaden);
+$('mikro-knopf').onclick=()=>senden('/api/mikro',{an:!mikroAn}).then(zustandLaden);
+$('eingabe').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(!t)return;$('frage').value='';
+  senden('/api/frage',{text:t}).then(zustandLaden)};
+
+/* ---------- Wetter (alle 10 Min) ---------- */
+const SYM={sonne:'☀',wolke:'☁',regen:'☂',schnee:'❄',gewitter:'ϟ',nebel:'≋'};
+async function wetterLaden(){try{const w=await holen('/api/wetter');
+  if(w.fehler){$('wetter').innerHTML=`<div class="leer">${esc(w.fehler)}</div>`;return}
+  $('wetter-ort').textContent=w.ort.toUpperCase();
+  $('wetter').innerHTML=`<div class="wetter-oben"><div style="font-size:38px;color:var(--cyan)">${SYM[w.symbol]||'☁'}</div><div><div class="wetter-temp">${w.temp}°</div><div class="dim">${esc(w.text)}</div></div></div>
+  <div class="wetter-zeile"><span>GEFÜHLT <b>${w.gefuehlt}°</b></span><span>FEUCHTE <b>${w.feuchte}%</b></span><span>WIND <b>${w.wind} km/h</b></span></div>
+  <div class="wetter-zeile"><span>☀↑ <b>${w.aufgang}</b></span><span>☾ <b>${w.untergang}</b></span></div>
+  <div class="tage">${w.tage.map(t=>`<div class="tag"><div class="dim">${t.tag}</div><div class="sym">${SYM[t.symbol]||'☁'}</div><div>${t.max}°/<span class="dim">${t.min}°</span></div><div class="regen">☂ ${t.regen??0}%</div></div>`).join('')}</div>`
+}catch(e){$('wetter').innerHTML='<div class="leer">Wetter nicht erreichbar</div>'}}
+wetterLaden();setInterval(wetterLaden,600000);
+
+/* ---------- Märkte (alle 30 s) ---------- */
+async function maerkteLaden(){try{const m=await holen('/api/maerkte');
+  if(m.fehler){$('maerkte').innerHTML=`<div class="leer">Hyperliquid ${esc(m.fehler)}</div>`;return}
+  $('maerkte').innerHTML=`<div class="kurse">${m.kurse.map(k=>{const auf=k.prozent>=0;
+    return `<div class="kurs"><div class="c">${esc(k.coin)}</div><div class="p">${zahl(k.preis,k.preis<10?3:k.preis<1000?2:0)} $</div><div class="p ${auf?'hoch':'runter'}">${auf?'▲':'▼'} ${zahl(Math.abs(k.prozent),2)} %</div></div>`}).join('')}</div>`
+}catch(e){$('maerkte').innerHTML='<div class="leer">Kurse nicht erreichbar</div>'}}
+maerkteLaden();setInterval(maerkteLaden,30000);
+
+/* ---------- Briefing (alle 15 Min) ---------- */
+async function briefingLaden(){try{const b=await holen('/api/briefing');
+  if(b.fehler){$('briefing').innerHTML=`<div class="leer">Noch kein Briefing verfügbar.</div>`;return}
+  $('briefing').innerHTML=`<div class="zwischentitel">${esc(b.titel.toUpperCase())}</div>`+
+    (b.einig.length?b.einig.map(z=>`<div class="brief-zeile">${esc(z)}</div>`).join(''):'<div class="leer">Heute keine klare Einigkeit unter den Top-Tradern.</div>')
+}catch(e){$('briefing').innerHTML='<div class="leer">Noch kein Briefing verfügbar.</div>'}}
+briefingLaden();setInterval(briefingLaden,900000);
+</script>
+</body>
+</html>

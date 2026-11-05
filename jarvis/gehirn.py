@@ -36,9 +36,11 @@ Werkzeuge:
 
 
 class Gehirn:
-    def __init__(self, werkzeugkasten, client=None):
+    def __init__(self, werkzeugkasten, client=None, beobachter=None):
         # Der Client liest den API-Schlüssel automatisch aus ANTHROPIC_API_KEY
         self.client = client or anthropic.Anthropic()
+        # Optional: wird bei jedem benutzten Werkzeug aufgerufen (für die Oberfläche)
+        self.beobachter = beobachter or (lambda name, eingaben: None)
         self.werkzeugkasten = werkzeugkasten
         self.werkzeuge = werkzeuge.alle_werkzeuge()
         self.verlauf = []          # bisheriges Gespräch
@@ -110,6 +112,7 @@ class Gehirn:
                 if block.type != "tool_use":
                     continue
                 print(f"  [Werkzeug] {block.name} {block.input}")
+                self.beobachter(block.name, dict(block.input))
                 try:
                     inhalt = self.werkzeugkasten.ausfuehren(block.name, dict(block.input))
                     ergebnisse.append({"type": "tool_result", "tool_use_id": block.id,

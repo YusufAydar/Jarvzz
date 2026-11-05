@@ -42,6 +42,16 @@ HYPERLIQUID_BERICHT_LOKAL = PROJEKT_ORDNER / "berichte" / "aktuell.md"
 # Der tägliche Bericht, den die GitHub Action ins Repository speichert
 HYPERLIQUID_BERICHT_URL = "https://raw.githubusercontent.com/YusufAydar/Jarvzz/main/berichte/aktuell.md"
 
+# ---------- Oberfläche (Dashboard) ----------
+# Für welchen Ort soll das Wetter angezeigt werden?
+WETTER_ORT = "Berlin"
+# Welche Kurse sollen im Feld "Märkte" stehen? (Namen wie bei Hyperliquid)
+MARKT_COINS = ["BTC", "ETH", "SOL", "HYPE"]
+# Ab wie viel Prozent Tagesbewegung meldet der "Wächter" einen Kurs
+MARKT_ALARM_PROZENT = 5
+# Port der Oberfläche (nur auf deinem PC erreichbar)
+OBERFLAECHE_PORT = 8765
+
 # ---------- PC-Steuerung (nur Windows) ----------
 # Programme, die Jarvis öffnen darf: "So sagst du es" -> "So heißt es für Windows"
 # Du kannst eigene hinzufügen, z. B. "discord": "discord:".
