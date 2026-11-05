@@ -11,7 +11,8 @@ Du sagst **„Jarvis, …“**, und er antwortet mit Stimme. Das „Gehirn“ is
 | 📈 Hyperliquid-Top-Trader | „Jarvis, was kaufen die Top-Trader gerade?“ / „Wo sind sich die Profis einig?“ |
 | ⏰ Erinnerungen | „Jarvis, erinnere mich in 20 Minuten an die Pizza.“ |
 | 📅 Termine | „Jarvis, trag morgen um 10 Uhr Zahnarzt ein und erinnere mich 30 Minuten vorher.“ / „Was steht diese Woche an?“ |
-| 🖥️ PC steuern | „Jarvis, öffne Spotify.“ / „Mach lauter.“ / „Nächstes Lied.“ / „Sperr den PC.“ |
+| 🖥️ PC steuern | „Jarvis, öffne Discord.“ (jedes Programm aus dem Startmenü) / „Schließ Chrome.“ / „Mach lauter.“ / „Nächstes Lied.“ / „Sperr den PC.“ |
+| ▶️ YouTube & Musik | „Jarvis, spiel ein Video von Haftbefehl.“ (startet das erste Video direkt) / „Such Haftbefehl auf Spotify.“ / „Google mal Rezepte für Lasagne.“ |
 | 📁 Dateien finden | „Jarvis, such meine Datei mit Rechnung.“ … „Öffne die erste.“ |
 
 Nach einer Antwort kannst du **10 Sekunden lang ohne „Jarvis“** nachfragen.

@@ -162,8 +162,29 @@ class TestWerkzeuge(unittest.TestCase):
         for w in werkzeuge.WERKZEUG_BESCHREIBUNGEN:
             self.assertTrue(hasattr(self.kasten, f"_{w['name']}"), w["name"])
 
-    def test_nicht_freigegebenes_programm(self):
-        self.assertIn("nicht freigegeben", self.kasten.ausfuehren("programm_oeffnen", {"name": "cmd"}))
+    def test_app_im_startmenue_finden(self):
+        apps = [{"Name": "Discord", "AppID": "com.squirrel.Discord.Discord"},
+                {"Name": "Discord deinstallieren", "AppID": "x"},
+                {"Name": "Steam", "AppID": "Valve.Steam"},
+                {"Name": "Spotify", "AppID": "SpotifyAB.Spotify"}]
+        self.assertEqual(werkzeuge.finde_app("discord", apps)["AppID"], "com.squirrel.Discord.Discord")
+        self.assertEqual(werkzeuge.finde_app("Spot", apps)["Name"], "Spotify")
+        self.assertIsNone(werkzeuge.finde_app("Fortnite", apps))
+
+    def test_youtube_erstes_video(self):
+        html = ('..."videoRenderer":{"videoId":"abcDEF12345","thumbnail":{},'
+                '"title":{"runs":[{"text":"Haftbefehl - Chabos wissen wer der Babo ist"}]}...'
+                '"videoRenderer":{"videoId":"zzzzzzzzzzz","title":{"runs":[{"text":"Zweites"}]}')
+        self.assertEqual(werkzeuge.youtube_erstes_video("haftbefehl", html=html),
+                         ("abcDEF12345", "Haftbefehl - Chabos wissen wer der Babo ist"))
+        self.assertEqual(werkzeuge.youtube_erstes_video("x", html="nichts"), (None, None))
+
+    def test_youtube_oeffnet_video(self):
+        with mock.patch.object(werkzeuge, "youtube_erstes_video", return_value=("abcDEF12345", "Titel")), \
+             mock.patch.object(werkzeuge.webbrowser, "open") as geoeffnet:
+            text = self.kasten.ausfuehren("youtube_abspielen", {"suche": "haftbefehl"})
+        geoeffnet.assert_called_once_with("https://www.youtube.com/watch?v=abcDEF12345")
+        self.assertIn("Titel", text)
 
     def test_hyperliquid_bericht_lokal(self):
         bericht = Path(self.tmp.name) / "aktuell.md"

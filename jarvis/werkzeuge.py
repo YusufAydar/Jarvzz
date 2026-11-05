@@ -10,10 +10,13 @@ Befehle ausführen, nichts löschen (außer eigenen Terminen) und nichts herunte
 """
 
 import ctypes
+import json
 import os
 import platform
+import re
 import subprocess
 import time
+import urllib.parse
 import urllib.request
 import webbrowser
 from datetime import datetime
@@ -81,11 +84,42 @@ WERKZEUG_BESCHREIBUNGEN = [
     },
     {
         "name": "programm_oeffnen",
-        "description": "Öffnet ein Programm auf dem PC. Erlaubte Namen: " + ", ".join(einstellungen.PROGRAMME),
+        "description": "Öffnet ein Programm oder eine App, die auf dem PC installiert ist "
+                       "(alles aus dem Startmenü, z. B. Discord, Steam, WhatsApp, Spotify, Word, "
+                       "Rechner, Editor). Kurznamen: " + ", ".join(einstellungen.PROGRAMME),
         "input_schema": {
             "type": "object",
-            "properties": {"name": {"type": "string"}},
+            "properties": {"name": {"type": "string", "description": "Name des Programms, z. B. 'Discord'"}},
             "required": ["name"],
+        },
+    },
+    {
+        "name": "programm_schliessen",
+        "description": "Schließt ein geöffnetes Programm-Fenster (wie auf das X klicken – ungespeicherte "
+                       "Arbeit wird vorher abgefragt).",
+        "input_schema": {
+            "type": "object",
+            "properties": {"name": {"type": "string", "description": "z. B. 'Chrome', 'Spotify', 'Rechner'"}},
+            "required": ["name"],
+        },
+    },
+    {
+        "name": "youtube_abspielen",
+        "description": "Sucht auf YouTube und spielt das erste passende Video sofort ab. "
+                       "Benutze das für alles wie 'spiel/öffne ein Video von ...', 'zeig mir ... auf YouTube'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"suche": {"type": "string", "description": "Suchbegriff, z. B. 'Haftbefehl Chabos wissen wer der Babo ist'"}},
+            "required": ["suche"],
+        },
+    },
+    {
+        "name": "spotify_suchen",
+        "description": "Öffnet Spotify mit einer Suche nach Künstler, Song oder Playlist.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"suche": {"type": "string"}},
+            "required": ["suche"],
         },
     },
     {
@@ -199,14 +233,52 @@ class Werkzeugkasten:
     # ---------- PC-Steuerung ----------
 
     def _programm_oeffnen(self, name):
-        ziel = einstellungen.PROGRAMME.get(name.lower().strip())
-        if ziel is None:
-            return f"'{name}' ist nicht freigegeben. Erlaubt: {', '.join(einstellungen.PROGRAMME)}"
         if not IST_WINDOWS:
             return "Programme öffnen geht nur unter Windows."
-        # "start" findet Programme wie chrome, winword usw. und auch Links wie spotify:
-        subprocess.Popen(["cmd", "/c", "start", "", ziel], shell=False)
-        return f"{name} wird geöffnet."
+        ziel = einstellungen.PROGRAMME.get(name.lower().strip())
+        if ziel is not None:
+            # "start" findet Programme wie chrome, winword usw. und auch Links wie spotify:
+            subprocess.Popen(["cmd", "/c", "start", "", ziel], shell=False)
+            return f"{name} wird geöffnet."
+        # Sonst: im Startmenü suchen (findet alle installierten Programme und Store-Apps)
+        app = finde_app(name, startmenue_apps())
+        if app is None:
+            return f"Ich habe kein Programm namens '{name}' im Startmenü gefunden."
+        subprocess.Popen(["explorer.exe", f"shell:AppsFolder\\{app['AppID']}"])
+        return f"{app['Name']} wird geöffnet."
+
+    def _programm_schliessen(self, name):
+        if not IST_WINDOWS:
+            return "Programme schließen geht nur unter Windows."
+        # Fenster finden, deren Programm- oder Fenstername passt, und höflich schließen
+        skript = (
+            "$n = $env:JARVIS_NAME; "
+            "Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and "
+            "($_.ProcessName -like \"*$n*\" -or $_.MainWindowTitle -like \"*$n*\") } | "
+            "ForEach-Object { [void]$_.CloseMainWindow(); $_.ProcessName }"
+        )
+        ergebnis = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", skript], capture_output=True, text=True,
+            env=dict(os.environ, JARVIS_NAME=name.strip()), creationflags=0x08000000, timeout=20)
+        geschlossen = sorted(set(ergebnis.stdout.split()))
+        if not geschlossen:
+            return f"Ich habe kein offenes Fenster für '{name}' gefunden."
+        return "Geschlossen: " + ", ".join(geschlossen)
+
+    def _youtube_abspielen(self, suche):
+        video_id, titel = youtube_erstes_video(suche)
+        if video_id is None:
+            url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(suche)
+            webbrowser.open(url)
+            return "Konnte kein Video direkt finden, habe die YouTube-Suche geöffnet."
+        webbrowser.open(f"https://www.youtube.com/watch?v={video_id}")
+        return f"Spiele auf YouTube: {titel or suche}"
+
+    def _spotify_suchen(self, suche):
+        if not IST_WINDOWS:
+            return "Spotify öffnen geht nur unter Windows."
+        subprocess.Popen(["cmd", "/c", "start", "", "spotify:search:" + urllib.parse.quote(suche)])
+        return f"Spotify-Suche nach '{suche}' geöffnet. Zum Abspielen auf das erste Ergebnis klicken."
 
     def _webseite_oeffnen(self, url):
         if not url.startswith(("https://", "http://")):
@@ -258,6 +330,61 @@ class Werkzeugkasten:
             return "PC sperren geht nur unter Windows."
         ctypes.windll.user32.LockWorkStation()
         return "Bildschirm gesperrt."
+
+
+def youtube_erstes_video(suche, html=None):
+    """
+    Sucht auf YouTube und gibt (video_id, titel) des ersten Videos zurück.
+    Funktioniert ohne Anmeldung und ohne API-Schlüssel, indem die Ergebnisseite gelesen wird.
+    """
+    if html is None:
+        url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(suche)
+        anfrage = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept-Language": "de-DE,de;q=0.9",
+            "Cookie": "SOCS=CAI; CONSENT=YES+cb",   # überspringt die Cookie-Abfrage
+        })
+        try:
+            with urllib.request.urlopen(anfrage, timeout=15) as antwort:
+                html = antwort.read().decode("utf-8", errors="ignore")
+        except Exception:
+            return None, None
+    # Das erste "videoRenderer" ist das erste normale Video (keine Werbung, keine Shorts-Leiste)
+    treffer = re.search(r'"videoRenderer":\{"videoId":"([\w-]{11})".*?"title":\{"runs":\[\{"text":"(.*?)"\}', html)
+    if treffer:
+        return treffer.group(1), json.loads(f'"{treffer.group(2)}"')
+    einfach = re.search(r'"videoId":"([\w-]{11})"', html)
+    return (einfach.group(1), None) if einfach else (None, None)
+
+
+_app_cache = None
+
+
+def startmenue_apps():
+    """Alle Programme und Apps aus dem Startmenü (Name + AppID), einmal geladen."""
+    global _app_cache
+    if _app_cache is None:
+        ergebnis = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-StartApps | ConvertTo-Json -Compress"],
+            capture_output=True, text=True, encoding="utf-8", creationflags=0x08000000, timeout=30)
+        daten = json.loads(ergebnis.stdout or "[]")
+        _app_cache = daten if isinstance(daten, list) else [daten]
+    return _app_cache
+
+
+def finde_app(name, apps):
+    """Sucht die passendste App: erst genauer Name, dann Anfang, dann irgendwo enthalten."""
+    gesucht = name.lower().strip()
+    namen = [(a, a.get("Name", "").lower()) for a in apps]
+    for passt in (lambda n: n == gesucht, lambda n: n.startswith(gesucht), lambda n: gesucht in n):
+        kandidaten = [a for a, n in namen if passt(n)]
+        # Deinstallations- und Hilfe-Einträge überspringen
+        kandidaten = [a for a in kandidaten if not re.search(r"uninstall|deinstall|hilfe|help|readme",
+                                                              a.get("Name", ""), re.I)]
+        if kandidaten:
+            return min(kandidaten, key=lambda a: len(a.get("Name", "")))
+    return None
 
 
 def _such_ordner():

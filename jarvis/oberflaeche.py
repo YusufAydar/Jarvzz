@@ -43,6 +43,8 @@ WERKZEUG_NAMEN = {
     "termin_eintragen": "Termin gespeichert", "termine_anzeigen": "Termine gelesen",
     "termin_loeschen": "Termin gelöscht", "hyperliquid_bericht": "Hyperliquid-Bericht geladen",
     "programm_oeffnen": "Programm geöffnet", "webseite_oeffnen": "Webseite geöffnet",
+    "programm_schliessen": "Programm geschlossen", "youtube_abspielen": "YouTube",
+    "spotify_suchen": "Spotify",
     "medien_steuern": "Medien gesteuert", "datei_suchen": "Dateien gesucht",
     "datei_oeffnen": "Datei geöffnet", "pc_sperren": "PC gesperrt",
 }

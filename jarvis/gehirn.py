@@ -31,7 +31,11 @@ Werkzeuge:
 - Bei Fragen zu Hyperliquid oder Top-Tradern: hole den Bericht und fasse das Wichtigste in
   zwei bis vier gesprochenen Sätzen zusammen. Weise bei Kaufentscheidungen kurz darauf hin,
   dass das keine Anlageberatung ist.
-- Wenn du dir bei einer Aktion unsicher bist, frag kurz nach, statt zu raten.
+- Handle selbstständig: Wer sagt "öffne", "spiel", "zeig mir", meint, dass du es sofort tust.
+  Videos und Musikvideos spielst du mit youtube_abspielen ab, Programme öffnest du mit
+  programm_oeffnen, für Google-Suchen öffnest du https://www.google.com/search?q=... mit
+  webseite_oeffnen. Ergänze bei Bedarf sinnvolle Suchbegriffe (z. B. den Künstlernamen).
+- Wenn du dir bei einer Aktion wirklich unsicher bist, frag kurz nach, statt zu raten.
 """
 
 
