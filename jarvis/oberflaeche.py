@@ -29,6 +29,7 @@ from pathlib import Path
 import einstellungen
 import stimme
 import termine
+import vollzugriff
 from gehirn import Gehirn
 from jarvis import env_datei_laden, ist_beenden
 from werkzeuge import Werkzeugkasten
@@ -45,7 +46,8 @@ WERKZEUG_NAMEN = {
     "programm_oeffnen": "Programm geöffnet", "webseite_oeffnen": "Webseite geöffnet",
     "programm_schliessen": "Programm geschlossen", "youtube_abspielen": "YouTube",
     "spotify_suchen": "Spotify", "markt_analyse": "Marktanalyse", "maerkte_ueberblick": "Marktüberblick",
-    "konto_status": "Kontostand geprüft",
+    "konto_status": "Kontostand geprüft", "befehl_ausfuehren": "Befehl",
+    "werkzeug_erstellen": "Neues Werkzeug", "jarvis_aktualisieren": "Update",
     "medien_steuern": "Medien gesteuert", "datei_suchen": "Dateien gesucht",
     "datei_oeffnen": "Datei geöffnet", "pc_sperren": "PC gesperrt",
 }
@@ -96,6 +98,45 @@ zustand = Zustand()
 auftraege = queue.Queue()  # Fragen an Jarvis (getippt oder gesprochen)
 
 
+class Freigabe:
+    """Eine offene Frage "Darf ich das?" – beantwortet per Klick oder per Stimme."""
+
+    def __init__(self):
+        self.sperre = threading.Lock()
+        self.anfrage = None
+        self._ereignis = threading.Event()
+        self._antwort = False
+        self._zaehler = 0
+
+    def fragen(self, art, beschreibung, details):
+        with self.sperre:
+            self._zaehler += 1
+            self.anfrage = {"id": self._zaehler, "art": art, "beschreibung": beschreibung,
+                            "details": details[:20000]}
+            self._ereignis.clear()
+            self._antwort = False
+        vorher = zustand.modus
+        zustand.setze_modus("wartet")
+        zustand.protokoll(f"Wartet auf Freigabe: {beschreibung}", "termin")
+        threading.Thread(target=stimme.sprechen, daemon=True,
+                         args=(f"Ich brauche deine Freigabe: {beschreibung}. Soll ich?",)).start()
+        self._ereignis.wait(einstellungen.BESTAETIGUNG_SEKUNDEN)
+        with self.sperre:
+            ok, self.anfrage = self._antwort, None
+        zustand.protokoll("Freigabe erteilt" if ok else "Freigabe abgelehnt", "ok" if ok else "fehler")
+        zustand.setze_modus(vorher)
+        return ok
+
+    def antworten(self, anfrage_id, ja):
+        with self.sperre:
+            if self.anfrage and (anfrage_id is None or self.anfrage["id"] == anfrage_id):
+                self._antwort = bool(ja)
+                self._ereignis.set()
+
+
+freigabe = Freigabe()
+
+
 # ---------------------------------------------------------------------------
 # Hintergrund-Arbeiter
 # ---------------------------------------------------------------------------
@@ -127,7 +168,17 @@ def lauscher():
     zustand.protokoll("Mikrofon bereit – sag „Jarvis“", "ok")
     letzte_antwort = 0.0
     while True:
-        if not zustand.mikro_an or zustand.modus in ("denkt", "spricht"):
+        # Wartet eine Freigabe? Dann auf "Ja" oder "Nein" hören
+        if freigabe.anfrage and zustand.mikro_an:
+            antwort = ohr.hoeren(warten_sekunden=5, max_satz_sekunden=5)
+            if antwort:
+                rest = stimme.wake_wort_entfernen(antwort)[1].lower()
+                if vollzugriff.ist_ja(rest):
+                    freigabe.antworten(None, True)
+                elif any(w in rest for w in ("nein", "stopp", "stop", "abbrechen", "nicht")):
+                    freigabe.antworten(None, False)
+            continue
+        if not zustand.mikro_an or zustand.modus in ("denkt", "spricht", "wartet"):
             if zustand.modus in ("denkt", "spricht"):
                 letzte_antwort = time.time()
             time.sleep(0.3)
@@ -350,6 +401,7 @@ def baue_handler(kalender, werkzeugkasten):
                         "log": list(zustand.log), "dialog": list(zustand.dialog),
                         "meldungen": list(zustand.meldungen),
                     }
+                daten["freigabe"] = freigabe.anfrage
                 daten["termine"] = [e for e in kalender.auflisten(von=jetzt.strftime(termine.ZEITFORMAT))][:12]
                 daten["system"] = self._sicher_laden(hole_system)
                 daten["host"] = platform.node()
@@ -381,6 +433,9 @@ def baue_handler(kalender, werkzeugkasten):
                 zustand.mikro_an = bool(daten.get("an")) and zustand.mikro_fehler is None
                 zustand.protokoll("Mikrofon " + ("an" if zustand.mikro_an else "aus"))
                 self._antwort({"ok": True, "mikro_an": zustand.mikro_an})
+            elif self.path == "/api/freigabe":
+                freigabe.antworten(daten.get("id"), daten.get("ja"))
+                self._antwort({"ok": True})
             elif self.path == "/api/quittieren":
                 zustand.quittieren(daten.get("id"))
                 self._antwort({"ok": True})
@@ -408,7 +463,7 @@ def main():
         sys.exit(1)
 
     kalender = termine.Terminkalender(einstellungen.TERMINE_DATEI)
-    werkzeugkasten = Werkzeugkasten(kalender)
+    werkzeugkasten = Werkzeugkasten(kalender, bestaetigen=freigabe.fragen)
     gehirn = Gehirn(werkzeugkasten, beobachter=lambda name, eingaben: zustand.protokoll(
         WERKZEUG_NAMEN.get(name, name) + (f": {next(iter(eingaben.values()))}" if eingaben else ""),
         "werkzeug"))

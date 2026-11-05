@@ -11,6 +11,15 @@ PROJEKT_ORDNER = JARVIS_ORDNER.parent
 # So spricht Jarvis dich an (z. B. "Boss", "Chef", "Yusuf"). Leer lassen = keine feste Anrede.
 ANREDE = "Boss"
 
+# ---------- Vollzugriff ----------
+# Darf Jarvis beliebige PowerShell-Befehle ausführen und sich selbst neue Werkzeuge bauen?
+VOLLZUGRIFF = True
+# Vor jedem Befehl / neuen Werkzeug fragen? (False = ohne Nachfrage. NICHT empfohlen: dann kann
+# ein falsch verstandener Satz oder eine manipulierte Webseite Schaden auf deinem PC anrichten.)
+BEFEHLE_OHNE_NACHFRAGE = False
+# So lange wartet Jarvis auf deine Bestätigung (Sekunden), danach gilt es als "nein"
+BESTAETIGUNG_SEKUNDEN = 60
+
 # ---------- KI-Gehirn (Claude) ----------
 # Der API-Schlüssel steht NICHT hier, sondern in der Datei jarvis/.env (siehe README).
 MODELL = "claude-opus-5-5"
@@ -98,3 +107,11 @@ PROGRAMME = {
 
 # In diesen Ordnern sucht Jarvis nach Dateien (innerhalb deines Benutzerordners)
 SUCH_ORDNER = ["Desktop", "Documents", "Dokumente", "Downloads", "Pictures", "Bilder", "Music", "Musik"]
+
+# ---------- Deine eigenen Einstellungen ----------
+# Trag deine Änderungen am besten NICHT hier ein, sondern in die Datei meine_einstellungen.py
+# (gleicher Aufbau, z. B. WETTER_ORT = "Köln"). Die wird bei Updates nie überschrieben.
+try:
+    from meine_einstellungen import *  # noqa: F401,F403
+except ImportError:
+    pass

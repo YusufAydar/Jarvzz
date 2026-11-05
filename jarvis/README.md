@@ -83,6 +83,11 @@ Mit der Leiste unten blendest du Felder ein und aus. Die Oberfläche läuft nur 
 | `werkzeuge.py` | **Was Jarvis tun kann.** Termine, Hyperliquid-Bericht, Programme öffnen, Lautstärke, Musik, Dateien, PC sperren. Jarvis kann *nur*, was hier steht. |
 | `termine.py` | **Kalender.** Speichert Erinnerungen und Termine und merkt, wann sie fällig sind. |
 | `stimme.py` | **Ohren und Mund.** Mikrofon → Text (Google-Spracherkennung) und Text → Stimme (Windows-Stimme). |
+| `vollzugriff.py` | **Befehle und selbstgebaute Werkzeuge**, immer mit deiner Freigabe. |
+| `updater.py` / `aktualisieren.bat` | **Updates** von GitHub holen, ohne deine persönlichen Dateien anzufassen. |
+| `plugins/` | Werkzeuge, die Jarvis sich selbst gebaut hat (eine `.py`-Datei pro Werkzeug). |
+| `meine_einstellungen.py` | Deine eigenen Einstellungen. Bleibt bei Updates erhalten (Vorlage: `meine_einstellungen.beispiel.py`). |
+| `trading/` | MetaTrader-5-Anbindung und Indikatoren (Trend, RSI, MACD, Zonen …). |
 | `einstellungen.py` | **Alle Einstellungen.** Erlaubte Programme, Sprechtempo, Wake-Wort usw. Hier darfst du ändern. |
 | `requirements.txt` | Liste der Zusatz-Pakete, die `installieren.bat` installiert. |
 | `.env.beispiel` | Vorlage für deinen geheimen API-Schlüssel. |
@@ -93,7 +98,25 @@ Mit der Leiste unten blendest du Felder ein und aus. Die Oberfläche läuft nur 
 
 ---
 
-## Anpassen (in `einstellungen.py`)
+## 🔓 Vollzugriff: Jarvis macht, was du sagst
+
+Jarvis kann **jeden PowerShell-Befehl** ausführen und sich **selbst neue Werkzeuge bauen**:
+- „Jarvis, räum meinen Download-Ordner auf und sortier die Dateien nach Typ.“
+- „Jarvis, installier VLC.“
+- „Jarvis, bau dir ein Werkzeug, das mir den Bitcoin-Kurs in Euro sagt.“ Das Werkzeug wird als Datei in `plugins/` gespeichert und ist ab dann dauerhaft dabei.
+
+**Sicherung:** Vor jedem Befehl und jedem neuen Werkzeug zeigt Jarvis dir genau, was er tun will. Der Reaktor wird rot, und du klickst **Erlauben** / **Ablehnen** oder sagst „Ja“ / „Nein“. Nach 60 Sekunden ohne Antwort gilt es als „Nein“.
+Abschalten kannst du die Nachfrage mit `BEFEHLE_OHNE_NACHFRAGE = True` in `meine_einstellungen.py`. **Das ist nicht empfohlen:** Dann kann ein falsch verstandener Satz oder eine manipulierte Webseite Schaden anrichten.
+Ein selbstgebautes Werkzeug entfernst du, indem du seine Datei in `plugins/` löschst.
+
+## 🔄 Updates
+
+- **Doppelklick auf `aktualisieren.bat`**, oder du sagst **„Jarvis, aktualisiere dich“**. Jarvis holt dann die neueste Version von GitHub und installiert neue Pakete. Danach startest du Jarvis neu.
+- **Nicht** überschrieben werden: `.env` (Schlüssel), `meine_einstellungen.py`, `daten/` (Termine), `plugins/` (selbstgebaute Werkzeuge).
+
+## Anpassen (in `meine_einstellungen.py`)
+
+Kopiere `meine_einstellungen.beispiel.py` und nenne die Kopie **`meine_einstellungen.py`**. Dort trägst du nur ein, was du anders haben willst, z. B. `WETTER_ORT = "Köln"`. Diese Datei bleibt bei Updates erhalten. In `einstellungen.py` siehst du alle möglichen Einstellungen.
 
 - **Neues Programm erlauben:** In `PROGRAMME` eine Zeile ergänzen, z. B. `"discord": "discord:",`.
 - **Schneller oder langsamer sprechen:** `SPRECHTEMPO` ändern (-10 bis 10).

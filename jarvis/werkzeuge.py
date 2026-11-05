@@ -23,6 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 import einstellungen
+import vollzugriff
 
 IST_WINDOWS = platform.system() == "Windows"
 
@@ -200,8 +201,11 @@ WEBSUCHE = {"type": "web_search_20260209", "name": "web_search", "max_uses": 3,
             "user_location": {"type": "approximate", "country": "DE", "timezone": "Europe/Berlin"}}
 
 
-def alle_werkzeuge():
+def alle_werkzeuge(plugins=None):
     werkzeuge = list(WERKZEUG_BESCHREIBUNGEN)
+    if einstellungen.VOLLZUGRIFF:
+        werkzeuge += vollzugriff.BESCHREIBUNGEN
+        werkzeuge += [m.WERKZEUG for m in (plugins or {}).values()]
     if einstellungen.WEBSUCHE_ERLAUBT:
         werkzeuge.append(WEBSUCHE)
     return werkzeuge
@@ -212,15 +216,44 @@ def alle_werkzeuge():
 # ---------------------------------------------------------------------------
 
 class Werkzeugkasten:
-    def __init__(self, kalender):
+    def __init__(self, kalender, bestaetigen=None):
         self.kalender = kalender
+        # Fragt den Nutzer, ob eine riskante Aktion ausgeführt werden darf -> True/False
+        self.bestaetigen = bestaetigen or (lambda art, beschreibung, details: False)
+        self.plugins = vollzugriff.plugins_laden() if einstellungen.VOLLZUGRIFF else {}
+        self.werkzeuge_geaendert = False  # wird True, wenn ein neues Plugin dazukam
+
+    def werkzeug_liste(self):
+        return alle_werkzeuge(self.plugins)
 
     def ausfuehren(self, name, eingaben):
         """Führt ein Werkzeug aus und gibt einen Text als Ergebnis für Claude zurück."""
+        if name in self.plugins:
+            return str(self.plugins[name].ausfuehren(**eingaben))
         funktion = getattr(self, f"_{name}", None)
         if funktion is None:
             raise ValueError(f"Unbekanntes Werkzeug: {name}")
         return funktion(**eingaben)
+
+    # ---------- Vollzugriff ----------
+
+    def _befehl_ausfuehren(self, befehl, zweck=""):
+        if not einstellungen.VOLLZUGRIFF:
+            return "Vollzugriff ist in den Einstellungen ausgeschaltet."
+        return vollzugriff.befehl_ausfuehren(befehl, zweck, self.bestaetigen)
+
+    def _jarvis_aktualisieren(self):
+        return vollzugriff.jarvis_aktualisieren(self.bestaetigen)
+
+    def _werkzeug_erstellen(self, name, zweck, python_code):
+        if not einstellungen.VOLLZUGRIFF:
+            return "Vollzugriff ist in den Einstellungen ausgeschaltet."
+        eingebaut = {w["name"] for w in WERKZEUG_BESCHREIBUNGEN + vollzugriff.BESCHREIBUNGEN} | {"web_search"}
+        ergebnis = vollzugriff.werkzeug_erstellen(name, zweck, python_code, self.bestaetigen, eingebaut)
+        if ergebnis.startswith("Werkzeug „"):
+            self.plugins = vollzugriff.plugins_laden()
+            self.werkzeuge_geaendert = True
+        return ergebnis
 
     # ---------- Termine ----------
 

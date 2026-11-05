@@ -1,0 +1,3 @@
+Hier speichert Jarvis die Werkzeuge, die er sich selbst baut (eine .py-Datei pro Werkzeug).
+Ein Werkzeug entfernen: einfach die Datei löschen und Jarvis neu starten.
+Dieser Ordner wird bei Updates nicht überschrieben.

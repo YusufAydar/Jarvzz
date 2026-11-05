@@ -84,6 +84,17 @@ canvas.kurve{width:100%;height:42px;display:block}
 .knopf:hover,.knopf:focus-visible{border-color:var(--cyan);outline:none}
 .knopf.aus{color:var(--dim)}
 
+/* Freigabe-Karte */
+#freigabe{width:100%;border:1px solid var(--rot);background:rgba(255,90,106,.07);padding:12px;margin-top:8px;display:flex;flex-direction:column;gap:8px}
+#freigabe[hidden]{display:none}
+#freigabe .kat{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--rot)}
+#freigabe .t{font-size:17px;font-weight:600}
+#freigabe pre{margin:0;max-height:180px;overflow:auto;background:rgba(0,0,0,.35);border:1px solid var(--linie);padding:8px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-word;color:var(--text)}
+#freigabe .knoepfe{display:flex;gap:8px;flex-wrap:wrap}
+#freigabe .knopf{padding:8px 14px}
+#freigabe .ja{color:var(--gruen);border-color:var(--gruen)}
+#freigabe .nein{color:var(--rot);border-color:var(--rot)}
+
 /* Wächter */
 .meldung{border:1px solid rgba(255,181,71,.35);background:rgba(255,181,71,.06);padding:8px 28px 8px 10px;margin-bottom:8px;position:relative}
 .meldung.markt-runter{border-color:rgba(255,90,106,.35);background:rgba(255,90,106,.05)}
@@ -175,6 +186,16 @@ footer .rechts{margin-left:auto}
         <canvas id="reaktor" aria-label="Jarvis-Zustandsanzeige"></canvas>
         <div id="modus-text">BEREIT FÜR BEFEHLE</div>
         <div id="dialog" aria-live="polite"></div>
+        <div id="freigabe" role="alertdialog" aria-labelledby="freigabe-titel" hidden>
+          <div class="kat">⚠ FREIGABE NÖTIG</div>
+          <div class="t" id="freigabe-titel"></div>
+          <pre id="freigabe-details"></pre>
+          <div class="knoepfe">
+            <button class="knopf ja" id="freigabe-ja">✓ ERLAUBEN</button>
+            <button class="knopf nein" id="freigabe-nein">✕ ABLEHNEN</button>
+            <span class="dim mono" style="font-size:11px;align-self:center">oder „Ja“ / „Nein“ sagen</span>
+          </div>
+        </div>
         <form class="eingabe" id="eingabe">
           <input id="frage" autocomplete="off" placeholder="Befehl eingeben … z. B. „Was machen die Top-Trader?“">
           <button class="knopf" type="submit">SENDEN</button>
@@ -232,8 +253,8 @@ felderAnwenden();
 setInterval(()=>{$('uhr').textContent=new Date().toLocaleTimeString('de-DE')},1000);
 
 /* ---------- Reaktor-Animation ---------- */
-const FARBEN={bereit:[63,216,255],hoert:[61,255,176],denkt:[255,181,71],spricht:[120,232,255]};
-const TEXTE={bereit:'BEREIT FÜR BEFEHLE',hoert:'ICH HÖRE ZU',denkt:'VERARBEITE …',spricht:'SPRICHT',aus:'MIKROFON AUS · TIPPEN MÖGLICH'};
+const FARBEN={bereit:[63,216,255],hoert:[61,255,176],denkt:[255,181,71],spricht:[120,232,255],wartet:[255,90,106]};
+const TEXTE={bereit:'BEREIT FÜR BEFEHLE',hoert:'ICH HÖRE ZU',denkt:'VERARBEITE …',spricht:'SPRICHT',wartet:'WARTET AUF DEINE FREIGABE',aus:'MIKROFON AUS · TIPPEN MÖGLICH'};
 let modus='bereit', mikroAn=true, farbe=[...FARBEN.bereit];
 const cv=$('reaktor'),cx=cv.getContext('2d');
 const ruhig=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -243,7 +264,7 @@ function reaktor(t){
   cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
   const ziel=FARBEN[modus]||FARBEN.bereit;farbe=farbe.map((c,i)=>c+(ziel[i]-c)*.06);
   const [r,g,b]=farbe.map(Math.round),col=a=>`rgba(${r},${g},${b},${a})`;
-  const s=ruhig?0:t/1000, tempo={bereit:.25,hoert:.5,denkt:1.6,spricht:.6}[modus]||.25;
+  const s=ruhig?0:t/1000, tempo={bereit:.25,hoert:.5,denkt:1.6,spricht:.6,wartet:.15}[modus]||.25;
   const R=Math.min(w,h)*.44, mx=w/2, my=h/2;
   const puls=modus==='spricht'?.5+.5*Math.abs(Math.sin(s*9)*Math.sin(s*3.3)):modus==='hoert'?.5+.5*Math.sin(s*4):.5+.15*Math.sin(s*1.5);
   cx.lineCap='round';
@@ -300,6 +321,15 @@ async function zustandLaden(){
       $('dialog').innerHTML=z.dialog.map(e=>`<div class="zeile-${e.wer}">${esc(e.text)}</div>`).join('');
       $('dialog').scrollTop=1e9}
 
+    // Freigabe
+    const f=z.freigabe;
+    $('freigabe').hidden=!f;
+    if(f&&$('freigabe').dataset.id!==String(f.id)){
+      $('freigabe').dataset.id=f.id;
+      $('freigabe-titel').textContent=f.beschreibung;
+      $('freigabe-details').textContent=f.details;
+      $('freigabe-ja').focus()}
+
     // System
     const s=z.system;
     if(s.fehler){$('system').innerHTML=`<div class="leer">${esc(s.fehler)}</div>`}
@@ -326,6 +356,8 @@ setInterval(zustandLaden,1000);zustandLaden();
 
 $('waechter').onclick=e=>{const id=e.target.dataset?.id;if(id)senden('/api/quittieren',{id:+id}).then(zustandLaden)};
 $('alle-quittieren').onclick=()=>senden('/api/quittieren',{}).then(zustandLaden);
+$('freigabe-ja').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:true}).then(zustandLaden);
+$('freigabe-nein').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:false}).then(zustandLaden);
 $('mikro-knopf').onclick=()=>senden('/api/mikro',{an:!mikroAn}).then(zustandLaden);
 $('eingabe').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(!t)return;$('frage').value='';
   senden('/api/frage',{text:t}).then(zustandLaden)};
