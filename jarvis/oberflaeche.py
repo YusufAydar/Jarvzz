@@ -48,6 +48,9 @@ WERKZEUG_NAMEN = {
     "spotify_suchen": "Spotify", "markt_analyse": "Marktanalyse", "maerkte_ueberblick": "Marktüberblick",
     "konto_status": "Kontostand geprüft", "befehl_ausfuehren": "Befehl",
     "werkzeug_erstellen": "Neues Werkzeug", "jarvis_aktualisieren": "Update", "mt5_zugang_speichern": "MT5-Zugang gespeichert",
+    "tradingview_analyse": "TradingView-Analyse", "setup_scanner": "Setup-Scanner",
+    "positionsgroesse_berechnen": "Positionsgröße", "alarm_setzen": "Alarm gesetzt",
+    "alarme_verwalten": "Alarme", "wirtschaftskalender": "Wirtschaftskalender",
     "medien_steuern": "Medien gesteuert", "datei_suchen": "Dateien gesucht",
     "datei_oeffnen": "Datei geöffnet", "pc_sperren": "PC gesperrt",
 }
@@ -492,6 +495,13 @@ def main():
 
     kalender = termine.Terminkalender(einstellungen.TERMINE_DATEI)
     werkzeugkasten = Werkzeugkasten(kalender, bestaetigen=freigabe.fragen)
+
+    def alarm_melden(text):
+        zustand.melde("alarm", text)
+        zustand.protokoll(text, "termin")
+        stimme.sprechen(text)
+    werkzeugkasten.melden = alarm_melden
+    werkzeugkasten.alarme_starten()
     gehirn = Gehirn(werkzeugkasten, beobachter=lambda name, eingaben: zustand.protokoll(
         WERKZEUG_NAMEN.get(name, name) + (f": {next(iter(eingaben.values()))}" if eingaben else ""),
         "werkzeug"))

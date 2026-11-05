@@ -81,12 +81,13 @@ def jarvis_aktualisieren(bestaetigen):
     import updater
     try:
         archiv, url = updater.herunterladen()
-        anzahl = updater.entpacken(archiv, updater.JARVIS_ORDNER)
+        sicherung = updater.sichern(updater.JARVIS_ORDNER)
+        aktualisiert, behalten = updater.entpacken(archiv, updater.JARVIS_ORDNER)
         ok = updater.pakete_installieren()
     except Exception as fehler:
         return f"Update fehlgeschlagen: {fehler}"
-    return (f"{anzahl} Dateien aktualisiert" + ("" if ok else ", aber pip meldete einen Fehler")
-            + ". Bitte Jarvis jetzt neu starten (Fenster schließen und Verknüpfung öffnen).")
+    return (updater.bericht(aktualisiert, behalten, sicherung) + ("" if ok else " pip meldete einen Fehler.")
+            + " Bitte Jarvis jetzt neu starten (Fenster schließen und Verknüpfung öffnen).")
 
 
 def befehl_ausfuehren(befehl, zweck, bestaetigen):

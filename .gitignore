@@ -12,3 +12,5 @@ jarvis/.venv/
 # Jarvis: eigene Einstellungen und selbstgebaute Werkzeuge bleiben privat
 jarvis/meine_einstellungen.py
 jarvis/plugins/*.py
+jarvis/sicherungen/
+*.neu

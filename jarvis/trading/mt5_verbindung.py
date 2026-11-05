@@ -116,6 +116,17 @@ def kerzen(symbol, zeitrahmen="M15", anzahl=300):
                   "low": float(d["low"]), "close": float(d["close"])} for d in daten]
 
 
+def kontrakt_info(name):
+    """(Wert von 1,0 Preisbewegung pro Lot in Kontowährung, kleinster Lot-Schritt) aus MT5."""
+    with _sperre:
+        verbinden()
+        sym = symbol_finden(name)
+        info = mt5.symbol_info(sym)
+    if info is None or not info.trade_tick_size:
+        raise MT5Fehler(f"Keine Kontraktdaten für {sym}.")
+    return info.trade_tick_value / info.trade_tick_size, info.volume_step
+
+
 def nachkommastellen(symbol):
     with _sperre:
         info = mt5.symbol_info(symbol)

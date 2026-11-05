@@ -29,6 +29,9 @@ jobs:
           pip install "anthropic>=2.5.0"
           python -m unittest discover tests -v
 
+      - name: Jarvis-Trading – echte Datenquellen prüfen (Yahoo, TradingView, Hyperliquid, Kalender)
+        run: python werkzeuge_entwicklung/live_check.py | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Probelauf mit 10 echten Tradern
         run: python main.py --anzahl 10 --db probelauf/test.db --berichte probelauf
 

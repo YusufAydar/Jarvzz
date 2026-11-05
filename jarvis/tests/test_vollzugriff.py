@@ -117,24 +117,39 @@ class TestBefehle(unittest.TestCase):
 
 
 class TestUpdater(unittest.TestCase):
-    def test_persoenliche_dateien_bleiben(self):
+    def zip_mit(self, dateien):
         puffer = io.BytesIO()
         with zipfile.ZipFile(puffer, "w") as z:
             z.writestr("Jarvzz-main/README.md", "x")
-            z.writestr("Jarvzz-main/jarvis/gehirn.py", "NEU")
-            z.writestr("Jarvzz-main/jarvis/.env", "FREMDER SCHLÜSSEL")
-            z.writestr("Jarvzz-main/jarvis/plugins/fremd.py", "x")
-            z.writestr("Jarvzz-main/jarvis/oberflaeche/index.html", "NEU")
+            for name, inhalt in dateien.items():
+                z.writestr(f"Jarvzz-main/jarvis/{name}", inhalt)
+        return zipfile.ZipFile(puffer)
+
+    def test_persoenliche_und_selbst_geaenderte_dateien_bleiben(self):
+        import hashlib, json
+        alt = b"ALTE VERSION VON MIR"
+        versionen = {"gehirn.py": [hashlib.sha256(alt).hexdigest()],
+                     "oberflaeche/index.html": [hashlib.sha256(b"MEIN ALTES DESIGN").hexdigest()]}
+        archiv = self.zip_mit({
+            "gehirn.py": "NEU", "oberflaeche/index.html": "NEUES DESIGN", "trading.html": "GANZ NEU",
+            ".env": "FREMDER SCHLÜSSEL", "plugins/fremd.py": "x", "versionen.json": json.dumps(versionen)})
         with tempfile.TemporaryDirectory() as tmp:
             ziel = Path(tmp)
             (ziel / ".env").write_text("MEIN SCHLÜSSEL", encoding="utf-8")
-            (ziel / "gehirn.py").write_text("ALT")
-            anzahl = updater.entpacken(zipfile.ZipFile(puffer), ziel)
-            self.assertEqual(anzahl, 2)
+            (ziel / "gehirn.py").write_bytes(alt)                        # unverändert von mir -> ersetzen
+            (ziel / "oberflaeche").mkdir()
+            (ziel / "oberflaeche" / "index.html").write_text("SELBST GEBAUTES DESIGN")  # selbst geändert
+            sicherung = updater.sichern(ziel)
+            aktualisiert, behalten = updater.entpacken(archiv, ziel)
             self.assertEqual((ziel / "gehirn.py").read_text(), "NEU")
-            self.assertEqual((ziel / "oberflaeche" / "index.html").read_text(), "NEU")
+            self.assertEqual((ziel / "trading.html").read_text(), "GANZ NEU")
+            self.assertEqual((ziel / "oberflaeche" / "index.html").read_text(), "SELBST GEBAUTES DESIGN")
+            self.assertEqual((ziel / "oberflaeche" / "index.html.neu").read_text(), "NEUES DESIGN")
+            self.assertEqual(behalten, ["oberflaeche/index.html"])
             self.assertEqual((ziel / ".env").read_text(encoding="utf-8"), "MEIN SCHLÜSSEL")
             self.assertFalse((ziel / "plugins" / "fremd.py").exists())
+            self.assertIn("oberflaeche/index.html", zipfile.ZipFile(sicherung).namelist())
+            self.assertIn("NICHT überschrieben", updater.bericht(aktualisiert, behalten, sicherung))
 
 
 if __name__ == "__main__":

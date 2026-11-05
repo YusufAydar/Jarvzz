@@ -11,6 +11,7 @@ import urllib.request
 
 import einstellungen
 from trading import indikatoren as ind
+from trading import kursquellen
 from trading import mt5_verbindung as mt
 
 HL_INTERVALLE = {"M1": ("1m", 60), "M5": ("5m", 300), "M15": ("15m", 900), "M30": ("30m", 1800),
@@ -34,21 +35,38 @@ def _hyperliquid_kerzen(coin, zeitrahmen, anzahl):
              "low": float(k["l"]), "close": float(k["c"])} for k in daten]
 
 
+def _stellen_schaetzen(preis):
+    return 2 if preis >= 100 else 3 if preis >= 10 else 5
+
+
 def kerzen_holen(symbol, zeitrahmen, anzahl=300):
-    """Gibt (symbolname, nachkommastellen, quelle, kerzen) zurück."""
+    """
+    Gibt (symbolname, nachkommastellen, quelle, kerzen) zurück.
+    Reihenfolge: MetaTrader 5 -> Hyperliquid (Krypto) -> Yahoo Finance (Gold, Forex, Indizes).
+    """
+    zeitrahmen = zeitrahmen.upper()
     try:
         sym, kerzen = mt.kerzen(symbol, zeitrahmen, anzahl)
         return sym, mt.nachkommastellen(sym), "MT5", kerzen
-    except mt.MT5Fehler as mt5_fehler:
-        coin = KRYPTO.get(symbol.upper().replace("/", ""))
-        if not coin:
-            raise
+    except mt.MT5Fehler as fehler:
+        mt5_fehler = fehler
+    coin = KRYPTO.get(symbol.upper().replace("/", ""))
+    if coin:
         try:
             kerzen = _hyperliquid_kerzen(coin, zeitrahmen, anzahl)
+            if kerzen:
+                return f"{coin} (Hyperliquid)", _stellen_schaetzen(kerzen[-1]["close"]), "Hyperliquid", kerzen
         except Exception:
-            raise mt5_fehler
-        stellen = 2 if kerzen and kerzen[-1]["close"] > 100 else 4
-        return f"{coin} (Hyperliquid)", stellen, "Hyperliquid", kerzen
+            pass
+    if kursquellen.yahoo_kuerzel(symbol):
+        try:
+            kuerzel, kerzen = kursquellen.yahoo_kerzen(symbol, zeitrahmen, anzahl)
+            if kerzen:
+                return (f"{symbol.upper()} ({kuerzel})", _stellen_schaetzen(kerzen[-1]["close"]),
+                        "Yahoo Finance", kerzen)
+        except Exception:
+            pass
+    raise mt5_fehler
 
 
 def chart_daten(symbol, zeitrahmen):

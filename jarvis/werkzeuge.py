@@ -111,6 +111,80 @@ WERKZEUG_BESCHREIBUNGEN = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "tradingview_analyse",
+        "description": "Holt die TradingView-'Technical Ratings' (Zusammenfassung aus 26 Indikatoren: "
+                       "Kaufen/Verkaufen/Neutral) für M15, H1, H4 und D1 plus RSI, MACD, ADX, ATR, EMAs und "
+                       "Monats-Pivots. Für Fragen wie 'Was sagt TradingView zu Gold?'. Geht für Forex, Gold, "
+                       "Indizes, Krypto und auch Aktien (z. B. 'NASDAQ:AAPL').",
+        "input_schema": {
+            "type": "object",
+            "properties": {"symbol": {"type": "string", "description": "z. B. 'XAUUSD', 'DAX', 'EURUSD' oder 'BÖRSE:SYMBOL'"}},
+            "required": ["symbol"],
+        },
+    },
+    {
+        "name": "setup_scanner",
+        "description": "Durchsucht die Trading-Märkte (oder einen bestimmten) nach Daytrading-Setups nach festen "
+                       "Regeln (Pullback im H1-Trend, RSI/MACD drehen) und liefert Einstieg, Stop-Loss, Ziel und "
+                       "CRV – oder den Grund, warum es gerade kein Setup gibt. Für 'Wo gibt es ein Setup?'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "optional: nur diesen Markt prüfen"},
+                "zeitrahmen": {"type": "string", "enum": ["M5", "M15", "M30"], "description": "Standard M15"},
+            },
+        },
+    },
+    {
+        "name": "positionsgroesse_berechnen",
+        "description": "Berechnet die Lotgröße, damit beim Stop-Loss nur ein bestimmter Prozentsatz des Kontos "
+                       "verloren geht (Standard 0,5 %). Nutzt die genauen Kontraktdaten aus MT5, wenn verfügbar.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string"}, "einstieg": {"type": "number"}, "stop": {"type": "number"},
+                "risiko_prozent": {"type": "number", "description": "Standard 0.5"},
+            },
+            "required": ["symbol", "einstieg", "stop"],
+        },
+    },
+    {
+        "name": "alarm_setzen",
+        "description": "Setzt einen Trading-Alarm. Jarvis beobachtet im Hintergrund und meldet sich per Stimme. "
+                       "Arten: preis_ueber, preis_unter, rsi_ueber, rsi_unter (Wert nötig) und setup "
+                       "(meldet, sobald der Setup-Scanner ein Setup findet).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string"},
+                "art": {"type": "string", "enum": ["preis_ueber", "preis_unter", "rsi_ueber", "rsi_unter", "setup"]},
+                "wert": {"type": "number"},
+                "zeitrahmen": {"type": "string", "enum": ["M1", "M5", "M15", "M30", "H1", "H4"]},
+            },
+            "required": ["symbol", "art"],
+        },
+    },
+    {
+        "name": "alarme_verwalten",
+        "description": "Zeigt alle aktiven Trading-Alarme oder löscht einen (mit loeschen_id).",
+        "input_schema": {
+            "type": "object",
+            "properties": {"loeschen_id": {"type": "integer", "description": "optional: diesen Alarm löschen"}},
+        },
+    },
+    {
+        "name": "wirtschaftskalender",
+        "description": "Wichtige Wirtschafts-News für heute und morgen (Zinsentscheide, NFP, CPI …) mit Uhrzeit. "
+                       "Vor jedem Trade sinnvoll: rund um starke News schwanken die Kurse heftig.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "alle": {"type": "boolean", "description": "true = auch mittlere Wichtigkeit"},
+                "waehrungen": {"type": "array", "items": {"type": "string"}, "description": "z. B. ['USD','EUR']"},
+            },
+        },
+    },
+    {
         "name": "mt5_zugang_speichern",
         "description": "Speichert die MetaTrader-5-Zugangsdaten (z. B. FTMO) dauerhaft in Jarvis' .env-Datei "
                        "und testet sofort die Verbindung. Benutze das, wenn der Nutzer dir Login, Passwort und "
@@ -237,6 +311,12 @@ class Werkzeugkasten:
         self.bestaetigen = bestaetigen or (lambda art, beschreibung, details: False)
         self.plugins = vollzugriff.plugins_laden() if einstellungen.VOLLZUGRIFF else {}
         self.werkzeuge_geaendert = False  # wird True, wenn ein neues Plugin dazukam
+        self._alarm_system = None
+
+    def alarme_starten(self):
+        """Startet die Alarm-Beobachtung, falls gespeicherte Alarme existieren (beim Programmstart)."""
+        if (einstellungen.DATEN_ORDNER / "alarme.json").exists():
+            self._alarme()
 
     def werkzeug_liste(self):
         return alle_werkzeuge(self.plugins)
@@ -308,33 +388,110 @@ class Werkzeugkasten:
     # ---------- Trading (nur lesen) ----------
 
     def _markt_analyse(self, symbol, zeitrahmen=None):
-        from trading import indikatoren, mt5_verbindung as mt
+        from trading import indikatoren, marktdaten
         zeitrahmen = (zeitrahmen or einstellungen.TRADING_ZEITRAHMEN).upper()
         try:
-            sym, kerzen = mt.kerzen(symbol, zeitrahmen, 300)
-            _, kerzen_h1 = mt.kerzen(sym, "H1", 200) if zeitrahmen != "H1" else (sym, None)
-            _, tage = mt.kerzen(sym, "D1", 3)
-        except mt.MT5Fehler as fehler:
-            return f"MetaTrader 5: {fehler}"
-        a = indikatoren.analysiere(kerzen, kerzen_h1, vortag=tage[-2] if len(tage) >= 2 else None)
-        return indikatoren.zusammenfassung(sym, zeitrahmen, a, mt.nachkommastellen(sym))
+            sym, stellen, quelle, kerzen = marktdaten.kerzen_holen(symbol, zeitrahmen, 300)
+        except Exception as fehler:
+            return f"Keine Kursdaten für {symbol}: {fehler}"
+        kerzen_h1 = tage = None
+        try:
+            kerzen_h1 = marktdaten.kerzen_holen(symbol, "H1", 200)[3] if zeitrahmen != "H1" else None
+            tage = marktdaten.kerzen_holen(symbol, "D1", 3)[3]
+        except Exception:
+            pass
+        a = indikatoren.analysiere(kerzen, kerzen_h1, vortag=tage[-2] if tage and len(tage) >= 2 else None)
+        return f"[Quelle: {quelle}]\n" + indikatoren.zusammenfassung(sym, zeitrahmen, a, stellen)
 
     def _maerkte_ueberblick(self):
-        from trading import indikatoren, mt5_verbindung as mt
+        from trading import indikatoren, marktdaten
         zeilen = []
         for name in einstellungen.TRADING_MAERKTE:
             try:
-                sym, kerzen = mt.kerzen(name, einstellungen.TRADING_ZEITRAHMEN, 200)
-                _, h1 = mt.kerzen(sym, "H1", 200)
-            except mt.MT5Fehler as fehler:
+                sym, stellen, quelle, kerzen = marktdaten.kerzen_holen(name, einstellungen.TRADING_ZEITRAHMEN, 200)
+                h1 = marktdaten.kerzen_holen(name, "H1", 200)[3]
+            except Exception as fehler:
                 zeilen.append(f"{name}: {fehler}")
                 continue
             schluss = [k["close"] for k in kerzen]
             r = indikatoren.rsi(schluss)[-1]
-            zeilen.append(f"{sym}: {schluss[-1]:.{mt.nachkommastellen(sym)}f} | "
-                          f"{einstellungen.TRADING_ZEITRAHMEN} {indikatoren.trend(kerzen)} | "
-                          f"H1 {indikatoren.trend(h1)} | RSI {r:.0f}")
+            zeilen.append(f"{sym}: {schluss[-1]:.{stellen}f} | {einstellungen.TRADING_ZEITRAHMEN} "
+                          f"{indikatoren.trend(kerzen)} | H1 {indikatoren.trend(h1)} | RSI {r:.0f} [{quelle}]")
         return "\n".join(zeilen)
+
+    def _tradingview_analyse(self, symbol):
+        from trading import kursquellen, tradingview
+        ticker = kursquellen.tradingview_kuerzel(symbol)
+        if not ticker:
+            return (f"Ich kenne das TradingView-Kürzel für '{symbol}' nicht. Bitte im Format BÖRSE:SYMBOL "
+                    "angeben, z. B. 'OANDA:XAUUSD' oder 'NASDAQ:AAPL'.")
+        try:
+            return tradingview.zusammenfassung(symbol, tradingview.analyse(ticker))
+        except Exception as fehler:
+            return f"TradingView gerade nicht erreichbar ({type(fehler).__name__}: {fehler})."
+
+    def _setup_scanner(self, symbol=None, zeitrahmen="M15"):
+        from trading import marktdaten, setups
+        zeilen = []
+        for name in ([symbol] if symbol else einstellungen.TRADING_MAERKTE):
+            try:
+                _, stellen, quelle, kerzen = marktdaten.kerzen_holen(name, zeitrahmen, 300)
+                h1 = marktdaten.kerzen_holen(name, "H1", 200)[3]
+            except Exception as fehler:
+                zeilen.append(f"{name}: keine Daten ({fehler})")
+                continue
+            zeilen.append(setups.setup_text(setups.finde_setup(kerzen, h1, name, stellen), stellen)
+                          + f" [{zeitrahmen}, {quelle}]")
+        return "\n".join(zeilen) + "\n(Regel-basierte Kandidaten, keine Garantie. Vor dem Einstieg News prüfen.)"
+
+    def _positionsgroesse_berechnen(self, symbol, einstieg, stop, risiko_prozent=0.5):
+        from trading import mt5_verbindung as mt
+        from trading import setups
+        wert = schritt = None
+        konto = einstellungen.FTMO_KONTOGROESSE
+        try:
+            wert, schritt = mt.kontrakt_info(symbol)
+            konto = mt.kontostand()["equity"]
+        except Exception:
+            pass
+        r = setups.positionsgroesse(konto, risiko_prozent, einstieg, stop, wert, schritt or 0.01, symbol)
+        text = (f"Risiko {risiko_prozent} % von {konto:.0f} = {r['risiko_betrag']:.2f}. "
+                f"Abstand Einstieg–Stop: {r['abstand']}.")
+        if r["lots"] is None:
+            return text + (" Für die Lotgröße brauche ich die Kontraktdaten aus MT5 (für dieses Symbol gibt es "
+                           "keinen sicheren Standardwert). MT5 öffnen und erneut fragen.")
+        return text + (f" Lotgröße: {r['lots']} Lot (tatsächliches Risiko {r['tatsaechliches_risiko']:.2f}, "
+                       f"Quelle: {r['quelle']}).")
+
+    def _alarme(self):
+        if getattr(self, "_alarm_system", None) is None:
+            from trading import alarme, marktdaten
+            self._alarm_system = alarme.Alarme(einstellungen.DATEN_ORDNER / "alarme.json", marktdaten.kerzen_holen)
+            alarme.waechter_starten(self._alarm_system, lambda text: self.melden(text))
+        return self._alarm_system
+
+    def melden(self, text):
+        """Meldet etwas von selbst (Alarme). Die Oberfläche ersetzt das durch ihre eigene Funktion."""
+        from stimme import sprechen
+        sprechen(text)
+
+    def _alarm_setzen(self, symbol, art, wert=None, zeitrahmen="M15"):
+        a = self._alarme().hinzufuegen(symbol, art, wert, zeitrahmen)
+        return "Alarm gesetzt: " + self._alarme().beschreibung(a)
+
+    def _alarme_verwalten(self, loeschen_id=None):
+        if loeschen_id is not None:
+            return "Gelöscht." if self._alarme().loeschen(loeschen_id) else f"Keinen Alarm mit ID {loeschen_id}."
+        aktiv = self._alarme().aktive()
+        return "\n".join(self._alarme().beschreibung(a) for a in aktiv) if aktiv else "Keine aktiven Alarme."
+
+    def _wirtschaftskalender(self, alle=False, waehrungen=None):
+        from trading import kalender
+        try:
+            liste = kalender.heute_und_morgen(nur_wichtig=not alle, waehrungen=waehrungen)
+        except Exception as fehler:
+            return f"Wirtschaftskalender gerade nicht erreichbar ({fehler})."
+        return kalender.zusammenfassung(liste, "Wichtige News heute und morgen")
 
     def _mt5_zugang_speichern(self, login, passwort, server):
         login = str(login).strip()

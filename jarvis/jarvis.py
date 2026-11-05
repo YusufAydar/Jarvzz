@@ -121,7 +121,11 @@ def main():
     kalender = termine.Terminkalender(einstellungen.TERMINE_DATEI)
     ohr = None if args.text else stimme.Ohr()
     bestaetigen = vollzugriff.bestaetigung_konsole if args.text else sprach_bestaetigung(ohr)
-    gehirn = Gehirn(Werkzeugkasten(kalender, bestaetigen=bestaetigen))
+    werkzeugkasten = Werkzeugkasten(kalender, bestaetigen=bestaetigen)
+    if args.text:
+        werkzeugkasten.melden = lambda text: stimme.sprechen(text, nur_text=True)
+    werkzeugkasten.alarme_starten()
+    gehirn = Gehirn(werkzeugkasten)
 
     stopp = threading.Event()
     threading.Thread(target=erinnerungs_waechter, args=(kalender, args.text, stopp),
