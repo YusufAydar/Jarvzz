@@ -1,0 +1,5 @@
+# Die Datenbank wird nicht ins Repo hochgeladen (zu groß, wird neu erzeugt)
+daten/
+probelauf/
+__pycache__/
+*.pyc

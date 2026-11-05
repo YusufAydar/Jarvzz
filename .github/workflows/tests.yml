@@ -1,0 +1,36 @@
+# Prüft bei jeder Änderung am Code, ob alles noch funktioniert:
+# 1. die automatischen Tests, 2. ein echter Probelauf mit 10 Tradern.
+# Der Bericht des Probelaufs wird NICHT ins Repo gespeichert, sondern
+# als Download ("Artifact") beim Lauf angehängt.
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Automatische Tests
+        run: python -m unittest discover tests -v
+
+      - name: Probelauf mit 10 echten Tradern
+        run: python main.py --anzahl 10 --db probelauf/test.db --berichte probelauf
+
+      - name: Probelauf-Bericht anzeigen
+        run: cat probelauf/aktuell.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Probelauf-Bericht zum Download anhängen
+        uses: actions/upload-artifact@v4
+        with:
+          name: probelauf-bericht
+          path: probelauf/aktuell.md
