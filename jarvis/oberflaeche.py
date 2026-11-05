@@ -381,17 +381,43 @@ def baue_handler(kalender, werkzeugkasten):
             except Exception as fehler:
                 return {"fehler": f"nicht erreichbar ({type(fehler).__name__})"}
 
+        def _mit_fehlertext(self, funktion):
+            try:
+                return funktion()
+            except Exception as fehler:
+                return {"fehler": str(fehler)[:300] or type(fehler).__name__}
+
         def do_GET(self):
             if not self._sicher():
                 return
             pfad = self.path.split("?")[0]
-            if pfad == "/":
-                inhalt = HTML_DATEI.read_bytes()
+            parameter = dict(urllib.parse.parse_qsl(self.path.partition("?")[2]))
+            seiten = {"/": "index.html", "/trading": "trading.html",
+                      "/vendor/lightweight-charts.js": "vendor/lightweight-charts.js"}
+            if pfad in seiten:
+                datei = HTML_DATEI.parent / seiten[pfad]
+                inhalt = datei.read_bytes()
                 self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Type", "text/javascript; charset=utf-8" if datei.suffix == ".js"
+                                 else "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(inhalt)))
                 self.end_headers()
                 self.wfile.write(inhalt)
+            elif pfad == "/api/chart":
+                from trading import marktdaten
+                symbol = parameter.get("symbol") or einstellungen.TRADING_MAERKTE[0]
+                tf = parameter.get("tf") or einstellungen.TRADING_ZEITRAHMEN
+                self._antwort(self._mit_fehlertext(lambda: marktdaten.chart_daten(symbol, tf)))
+            elif pfad == "/api/konto":
+                from trading import marktdaten
+                self._antwort(self._mit_fehlertext(marktdaten.konto_daten))
+            elif pfad == "/api/ueberblick":
+                from trading import marktdaten
+                self._antwort(self._mit_fehlertext(lambda: zwischengespeichert(
+                    "ueberblick", 20, lambda: {"maerkte": marktdaten.ueberblick_daten()})))
+            elif pfad == "/api/trading_einstellungen":
+                self._antwort({"maerkte": einstellungen.TRADING_MAERKTE,
+                               "zeitrahmen": einstellungen.TRADING_ZEITRAHMEN})
             elif pfad == "/api/zustand":
                 jetzt = datetime.now()
                 with zustand.sperre:

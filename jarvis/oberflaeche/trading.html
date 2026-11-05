@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis Trading Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: Kopfzeile mit Markt/Zeitrahmen, darunter drei Spalten: Konto | Chart | Analyse+Jarvis */
+:root{
+  --bg:#060b0e; --panel:#0b151a; --panel2:#0e1c22; --linie:#163039; --linie-hell:#1f4a57;
+  --text:#cfe9ef; --dim:#5f8691; --cyan:#3fd8ff; --gruen:#3dffb0; --amber:#ffb547; --rot:#ff5a6a;
+  --mono:"Share Tech Mono",ui-monospace,Consolas,monospace;
+  --sans:"Rajdhani","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 30%,#0a1a20 0%,var(--bg) 70%);color:var(--text);font-family:var(--sans);font-size:15px;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit}
+.mono{font-family:var(--mono)} .dim{color:var(--dim)} .gruen{color:var(--gruen)} .rot{color:var(--rot)} .amber{color:var(--amber)}
+.zahl{font-variant-numeric:tabular-nums}
+
+header{display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:1px solid var(--linie);flex-wrap:wrap}
+.logo{font-family:var(--mono);font-size:20px;letter-spacing:.3em;color:var(--cyan);text-shadow:0 0 12px rgba(63,216,255,.5)}
+.logo small{display:block;font-size:10px;letter-spacing:.35em;color:var(--dim);text-shadow:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:transparent;border:1px solid var(--linie-hell);color:var(--dim);font-family:var(--mono);font-size:12px;letter-spacing:.08em;padding:5px 10px;cursor:pointer}
+.chip:hover,.chip:focus-visible{color:var(--text);border-color:var(--cyan);outline:none}
+.chip[aria-pressed="true"]{color:var(--bg);background:var(--cyan);border-color:var(--cyan)}
+.kopf-rechts{margin-left:auto;display:flex;gap:14px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--dim)}
+#uhr{font-size:18px;color:var(--cyan)}
+a.zurueck{color:var(--cyan);text-decoration:none;border:1px solid var(--linie-hell);padding:5px 10px;font-family:var(--mono);font-size:12px;letter-spacing:.1em}
+a.zurueck:hover{border-color:var(--cyan)}
+
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(250px,300px) minmax(0,1fr) minmax(280px,340px);gap:12px;padding:12px 16px}
+.spalte{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.feld{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--linie);position:relative;display:flex;flex-direction:column;min-height:0}
+.feld::before,.feld::after{content:"";position:absolute;width:10px;height:10px;border-color:var(--cyan);border-style:solid;opacity:.7}
+.feld::before{top:-1px;left:-1px;border-width:2px 0 0 2px}.feld::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.kopf{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--linie);font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--cyan)}
+.kopf .rechts{margin-left:auto;color:var(--dim);letter-spacing:.1em}
+.inhalt{padding:12px;overflow:auto;min-height:0}
+.leer{color:var(--dim);font-family:var(--mono);font-size:12px;line-height:1.5}
+
+/* Konto */
+.gross{font-size:30px;font-weight:600;line-height:1.1}
+.zeile{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:4px 0;border-bottom:1px solid rgba(22,48,57,.6)}
+.zeile:last-child{border:0}
+.zeile span:first-child{color:var(--dim);font-family:var(--mono);font-size:12px}
+.ampel{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.15em;padding:3px 8px;border:1px solid currentColor}
+.ampel::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.balken{height:6px;background:var(--linie);margin:6px 0 2px;position:relative;overflow:hidden}
+.balken i{position:absolute;inset:0 auto 0 0;transition:width .5s}
+.pos{border:1px solid var(--linie);padding:8px;margin-bottom:8px;font-size:14px}
+.pos .k{display:flex;justify-content:space-between;font-weight:600}
+.warn{color:var(--rot);font-family:var(--mono);font-size:11px}
+
+/* Chart */
+#feld-chart{flex:1}
+.chart-kopf{display:flex;align-items:baseline;gap:14px;padding:10px 12px 0;flex-wrap:wrap}
+#chart-symbol{font-size:24px;font-weight:700}
+#chart-preis{font-size:24px;font-family:var(--mono)}
+.chart-schalter{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+#chart-bereich{flex:1;min-height:240px;position:relative;margin:6px 4px 0}
+#chart,#rsi-chart{position:absolute;inset:0}
+#rsi-bereich{height:110px;position:relative;margin:0 4px 4px;border-top:1px solid var(--linie)}
+.rsi-label{position:absolute;left:8px;top:4px;z-index:2;font-family:var(--mono);font-size:11px;color:var(--dim)}
+#chart-meldung{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--dim);font-family:var(--mono);font-size:13px;z-index:3;background:rgba(6,11,14,.75)}
+#chart-meldung[hidden]{display:none}
+.legende{display:flex;gap:14px;flex-wrap:wrap;padding:0 12px 8px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.legende i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px}
+.quelle{font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+/* Analyse */
+.kacheln{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kachel{border:1px solid var(--linie);padding:8px}
+.kachel .l{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--dim)}
+.kachel .w{font-size:18px;font-weight:600;margin-top:2px}
+.zonen{margin-top:10px;font-family:var(--mono);font-size:12px;line-height:1.7}
+
+/* Überblick */
+.markt{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--linie);color:var(--text);padding:7px 2px;cursor:pointer;text-align:left}
+.markt:hover,.markt:focus-visible{background:rgba(63,216,255,.05);outline:none}
+.markt .n{font-weight:700}
+.markt .t{font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+/* Jarvis */
+#feld-jarvis{flex:1}
+#dialog{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.du{align-self:flex-end;color:var(--dim);text-align:right;max-width:90%}
+.jarvis{border-left:2px solid var(--cyan);padding-left:8px;max-width:95%}
+.eingabe{display:flex;gap:6px;padding:10px;border-top:1px solid var(--linie);flex-wrap:wrap}
+.eingabe input{flex:1;min-width:0;background:transparent;border:1px solid var(--linie-hell);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px}
+.eingabe input:focus{outline:none;border-color:var(--cyan)}
+.knopf{background:transparent;border:1px solid var(--linie-hell);color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:7px 10px;cursor:pointer}
+.knopf:hover,.knopf:focus-visible{border-color:var(--cyan);outline:none}
+.status-punkt{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);display:inline-block}
+#freigabe{border:1px solid var(--rot);background:rgba(255,90,106,.08);padding:10px;margin:10px;display:flex;flex-direction:column;gap:6px}
+#freigabe[hidden]{display:none}
+#freigabe pre{margin:0;max-height:120px;overflow:auto;background:rgba(0,0,0,.35);padding:6px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;word-break:break-word}
+
+footer{padding:6px 16px;border-top:1px solid var(--linie);font-family:var(--mono);font-size:10px;color:var(--dim);display:flex;gap:12px;flex-wrap:wrap}
+footer a{color:var(--dim)}
+
+@media (max-width:1150px){
+  body{overflow:auto;height:auto}
+  main{grid-template-columns:1fr 1fr}
+  .spalte-mitte{grid-column:1/-1;order:-1}
+  #feld-chart{min-height:620px}
+}
+@media (max-width:700px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">J.A.R.V.I.S<small>TRADING DESK</small></div>
+  <div class="chips" id="symbole" aria-label="Markt wählen"></div>
+  <div class="chips" id="zeitrahmen" aria-label="Zeitrahmen wählen"></div>
+  <div class="kopf-rechts"><span id="uhr" class="zahl">--:--:--</span><a class="zurueck" href="/">← COCKPIT</a></div>
+</header>
+
+<main>
+  <div class="spalte">
+    <section class="feld">
+      <div class="kopf">FTMO-KONTO<span class="rechts" id="ampel"></span></div>
+      <div class="inhalt" id="konto"><div class="leer">Lade …</div></div>
+    </section>
+    <section class="feld" style="flex:1">
+      <div class="kopf">OFFENE POSITIONEN<span class="rechts" id="pos-zahl"></span></div>
+      <div class="inhalt" id="positionen"><div class="leer">–</div></div>
+    </section>
+  </div>
+
+  <div class="spalte spalte-mitte">
+    <section class="feld" id="feld-chart">
+      <div class="chart-kopf">
+        <span id="chart-symbol">–</span><span id="chart-preis" class="zahl">–</span><span class="quelle" id="chart-quelle"></span>
+        <div class="chart-schalter">
+          <button class="chip" id="t-ema" aria-pressed="true">EMA</button>
+          <button class="chip" id="t-zonen" aria-pressed="true">ZONEN</button>
+          <button class="chip" id="t-pivots" aria-pressed="true">PIVOTS</button>
+          <button class="chip" id="t-pos" aria-pressed="true">POSITIONEN</button>
+        </div>
+      </div>
+      <div id="chart-bereich"><div id="chart"></div><div id="chart-meldung">Lade Chart …</div></div>
+      <div id="rsi-bereich"><span class="rsi-label">RSI 14</span><div id="rsi-chart"></div></div>
+      <div class="legende">
+        <span><i style="background:#3fd8ff"></i>EMA 20</span><span><i style="background:#ffb547"></i>EMA 50</span>
+        <span><i style="background:#3dffb0"></i>Unterstützung</span><span><i style="background:#ff5a6a"></i>Widerstand</span>
+        <span><i style="background:#b98cff"></i>Pivots</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="spalte">
+    <section class="feld">
+      <div class="kopf">ANALYSE<span class="rechts" id="analyse-tf"></span></div>
+      <div class="inhalt" id="analyse"><div class="leer">–</div></div>
+    </section>
+    <section class="feld">
+      <div class="kopf">MÄRKTE<span class="rechts" id="ueberblick-tf"></span></div>
+      <div class="inhalt" id="ueberblick" style="max-height:220px"><div class="leer">Lade …</div></div>
+    </section>
+    <section class="feld" id="feld-jarvis">
+      <div class="kopf"><span class="status-punkt" id="status-punkt"></span>JARVIS<span class="rechts" id="modus">–</span></div>
+      <div id="freigabe" role="alertdialog" hidden>
+        <div class="rot mono" style="font-size:11px;letter-spacing:.15em">⚠ FREIGABE NÖTIG</div>
+        <div id="freigabe-titel" style="font-weight:600"></div><pre id="freigabe-details"></pre>
+        <div style="display:flex;gap:6px"><button class="knopf gruen" id="freigabe-ja">✓ ERLAUBEN</button><button class="knopf rot" id="freigabe-nein">✕ ABLEHNEN</button></div>
+      </div>
+      <div class="inhalt" id="dialog-box" style="flex:1"><div id="dialog"></div></div>
+      <form class="eingabe" id="eingabe">
+        <input id="frage" autocomplete="off" placeholder="Frag Jarvis …">
+        <button class="knopf" type="submit">SENDEN</button>
+        <button class="knopf" type="button" id="analyse-knopf" style="width:100%">⚡ JARVIS, ANALYSIERE DIESEN CHART</button>
+      </form>
+    </section>
+  </div>
+</main>
+<footer>
+  <span>Nur Analyse – Jarvis platziert in dieser Version keine Orders. Keine Anlageberatung.</span>
+  <span>Charts: TradingView Lightweight Charts™ · Copyright (c) 2024 TradingView, Inc. · <a href="https://www.tradingview.com/" target="_blank" rel="noopener">tradingview.com</a></span>
+</footer>
+
+<script src="/vendor/lightweight-charts.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(x,n=2)=>x==null?'–':Number(x).toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+const holen=url=>fetch(url,{cache:'no-store'}).then(r=>r.json());
+const senden=(url,d)=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Jarvis':'1'},body:JSON.stringify(d)});
+let speicher={};try{speicher=JSON.parse(localStorage.getItem('jarvis-trading')||'{}')}catch(e){}
+const merken=()=>{try{localStorage.setItem('jarvis-trading',JSON.stringify(speicher))}catch(e){}};
+
+let symbol=null, tf=speicher.tf||'M15', stellen=2, schalter=Object.assign({ema:true,zonen:true,pivots:true,pos:true},speicher.schalter||{});
+let positionen=[], letzteZeit=0, ladeId=0;
+setInterval(()=>{$('uhr').textContent=new Date().toLocaleTimeString('de-DE')},1000);
+
+/* ---------- Chart ---------- */
+const basis={layout:{background:{type:'solid',color:'transparent'},textColor:'#5f8691',fontFamily:'Share Tech Mono, Consolas, monospace'},
+  grid:{vertLines:{color:'rgba(31,74,87,.25)'},horzLines:{color:'rgba(31,74,87,.25)'}},
+  rightPriceScale:{borderColor:'#163039'},timeScale:{borderColor:'#163039',timeVisible:true,secondsVisible:false},
+  crosshair:{mode:0},autoSize:true,localization:{locale:'de-DE'}};
+const chart=LightweightCharts.createChart($('chart'),basis);
+const kerzen=chart.addCandlestickSeries({upColor:'#3dffb0',downColor:'#ff5a6a',borderVisible:false,wickUpColor:'#3dffb0',wickDownColor:'#ff5a6a'});
+const ema20=chart.addLineSeries({color:'#3fd8ff',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+const ema50=chart.addLineSeries({color:'#ffb547',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+const rsiChart=LightweightCharts.createChart($('rsi-chart'),{...basis,timeScale:{...basis.timeScale,visible:false},rightPriceScale:{borderColor:'#163039',scaleMargins:{top:.1,bottom:.1}}});
+const rsiLinie=rsiChart.addLineSeries({color:'#b98cff',lineWidth:2,priceLineVisible:false,
+  autoscaleInfoProvider:()=>({priceRange:{minValue:0,maxValue:100}})});
+[70,30].forEach(w=>rsiLinie.createPriceLine({price:w,color:w===70?'#ff5a6a':'#3dffb0',lineWidth:1,lineStyle:2,axisLabelVisible:true}));
+// Zeitachsen von Chart und RSI gemeinsam bewegen (der RSI hat Platzhalter für die ersten Kerzen,
+// damit beide gleich viele Punkte haben)
+let sync=false;
+chart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(sync||!r)return;sync=true;rsiChart.timeScale().setVisibleLogicalRange(r);sync=false});
+rsiChart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(sync||!r)return;sync=true;chart.timeScale().setVisibleLogicalRange(r);sync=false});
+const mitLuecken=(kerzenListe,punkte)=>{const m=new Map(punkte.map(p=>[p.time,p.value]));
+  return kerzenListe.map(k=>m.has(k.time)?{time:k.time,value:m.get(k.time)}:{time:k.time})};
+
+let linien=[],linienSchluessel='';
+function linienSetzen(d){
+  const a=d.analyse, liste=[];
+  if(schalter.zonen){(a.unterstuetzungen||[]).forEach(([p,n])=>liste.push({price:p,color:'#3dffb0',title:`S ${n}x`,lineStyle:0}));
+    (a.widerstaende||[]).forEach(([p,n])=>liste.push({price:p,color:'#ff5a6a',title:`R ${n}x`,lineStyle:0}))}
+  if(schalter.pivots&&a.pivots)Object.entries(a.pivots).forEach(([k,p])=>liste.push({price:p,color:'#b98cff',title:k,lineStyle:2}));
+  if(schalter.pos)positionen.filter(p=>p.symbol===d.symbol).forEach(p=>{
+    liste.push({price:p.einstieg,color:'#cfe9ef',title:`${p.richtung} ${p.volumen}`,lineStyle:0});
+    if(p.sl)liste.push({price:p.sl,color:'#ff5a6a',title:'SL',lineStyle:1});
+    if(p.tp)liste.push({price:p.tp,color:'#3dffb0',title:'TP',lineStyle:1})});
+  const schluessel=JSON.stringify(liste);
+  if(schluessel===linienSchluessel)return;
+  linienSchluessel=schluessel;
+  linien.forEach(l=>kerzen.removePriceLine(l));
+  linien=liste.map(l=>kerzen.createPriceLine({...l,lineWidth:1,axisLabelVisible:true}));
+}
+
+async function chartLaden(neu){
+  const id=++ladeId;
+  if(neu){$('chart-meldung').hidden=false;$('chart-meldung').textContent='Lade Chart …'}
+  let d;try{d=await holen(`/api/chart?symbol=${encodeURIComponent(symbol)}&tf=${tf}`)}catch(e){d={fehler:'Keine Verbindung zu Jarvis'}}
+  if(id!==ladeId)return;
+  if(d.fehler){$('chart-meldung').hidden=false;$('chart-meldung').textContent=d.fehler;return}
+  $('chart-meldung').hidden=true;
+  if(neu||d.stellen!==stellen){stellen=d.stellen;kerzen.applyOptions({priceFormat:{type:'price',precision:stellen,minMove:1/10**stellen}})}
+  if(neu||!letzteZeit){
+    kerzen.setData(d.kerzen);ema20.setData(d.ema20);ema50.setData(d.ema50);rsiLinie.setData(mitLuecken(d.kerzen,d.rsi));
+    chart.timeScale().scrollToRealTime();
+  }else{
+    d.kerzen.filter(k=>k.time>=letzteZeit).forEach(k=>kerzen.update(k));
+    [[ema20,d.ema20],[ema50,d.ema50],[rsiLinie,d.rsi]].forEach(([s,w])=>w.filter(p=>p.time>=letzteZeit).forEach(p=>s.update(p)));
+  }
+  ema20.applyOptions({visible:schalter.ema});ema50.applyOptions({visible:schalter.ema});
+  letzteZeit=d.kerzen.at(-1).time;
+  linienSetzen(d);
+  const letzte=d.kerzen.at(-1),erste=d.kerzen.at(-2)||letzte;
+  $('chart-symbol').textContent=d.symbol;
+  $('chart-preis').textContent=fmt(letzte.close,stellen);
+  $('chart-preis').className='zahl '+(letzte.close>=erste.close?'gruen':'rot');
+  $('chart-quelle').textContent=`${d.zeitrahmen} · Quelle ${d.quelle}`;
+  analyseZeigen(d);
+}
+
+function trendFarbe(t){return !t?'dim':t.startsWith('Auf')?'gruen':t.startsWith('Ab')?'rot':'amber'}
+function analyseZeigen(d){
+  const a=d.analyse;$('analyse-tf').textContent=d.zeitrahmen;
+  const rsiF=a.rsi>70?'rot':a.rsi<30?'gruen':'';
+  $('analyse').innerHTML=`<div class="kacheln">
+    <div class="kachel"><div class="l">TREND ${d.zeitrahmen}</div><div class="w ${trendFarbe(a.trend)}">${esc(a.trend)}</div></div>
+    <div class="kachel"><div class="l">TREND H1</div><div class="w ${trendFarbe(a.trend_h1)}">${esc(a.trend_h1||'–')}</div></div>
+    <div class="kachel"><div class="l">RSI 14</div><div class="w zahl ${rsiF}">${fmt(a.rsi,1)}${a.rsi>70?' · überkauft':a.rsi<30?' · überverkauft':''}</div></div>
+    <div class="kachel"><div class="l">MACD</div><div class="w ${a.macd_hist>0?'gruen':'rot'}">${a.macd_hist>0?'▲ bullisch':'▼ bärisch'}${a.macd_kreuzung?' · Kreuzung!':''}</div></div>
+    <div class="kachel" style="grid-column:1/-1"><div class="l">ATR 14 · TYPISCHE KERZE</div><div class="w zahl">${fmt(a.atr,stellen)} <span class="dim mono" style="font-size:11px">→ SL-Idee 1,5 ATR = ${fmt(a.atr*1.5,stellen)}</span></div></div>
+  </div>
+  <div class="zonen">
+    ${(a.widerstaende||[]).slice().reverse().map(([p,n])=>`<div class="rot">R ${fmt(p,stellen)} <span class="dim">(${n}x)</span></div>`).join('')}
+    <div class="zahl" style="color:var(--text)">► ${fmt(a.preis,stellen)} aktuell</div>
+    ${(a.unterstuetzungen||[]).map(([p,n])=>`<div class="gruen">S ${fmt(p,stellen)} <span class="dim">(${n}x)</span></div>`).join('')}
+  </div>`;
+}
+
+/* ---------- Konto ---------- */
+const preis=x=>{const s=String(x).split('.')[1];return fmt(x,Math.min(Math.max(s?s.length:0,2),5))};
+async function kontoLaden(){
+  let d;try{d=await holen('/api/konto')}catch(e){return}
+  if(d.fehler){$('konto').innerHTML=`<div class="leer">${esc(d.fehler)}</div>`;$('ampel').textContent='';positionen=[];$('positionen').innerHTML='<div class="leer">–</div>';return}
+  const k=d.konto,p=d.pruefung,r=d.regeln,w=k.waehrung;
+  const farbe={'grün':'var(--gruen)','gelb':'var(--amber)','rot':'var(--rot)'}[p.ampel];
+  $('ampel').innerHTML=`<span class="ampel" style="color:${farbe}">${p.ampel.toUpperCase()}</span>`;
+  const fort=Math.max(0,Math.min(100,p.fortschritt_ziel_prozent));
+  const tagVerbraucht=Math.max(0,Math.min(100,(r.kontogroesse*r.sicher_tag/100-p.rest_tagesverlust_sicher)/(r.kontogroesse*r.sicher_tag/100)*100));
+  $('konto').innerHTML=`<div class="dim mono" style="font-size:11px">EQUITY · ${esc(k.server)}</div>
+    <div class="gross zahl">${fmt(k.equity)} <span class="dim" style="font-size:16px">${esc(w)}</span></div>
+    <div class="zeile"><span>BALANCE</span><b class="zahl">${fmt(k.balance)}</b></div>
+    <div class="zeile"><span>HEUTE</span><b class="zahl ${p.gewinn_heute>=0?'gruen':'rot'}">${p.gewinn_heute>=0?'+':''}${fmt(p.gewinn_heute)}</b></div>
+    <div class="zeile"><span>OFFEN</span><b class="zahl ${k.gewinn_offen>=0?'gruen':'rot'}">${fmt(k.gewinn_offen)}</b></div>
+    <div style="margin-top:10px" class="dim mono" style="font-size:11px">ZIEL +${r.ziel}% · ${fmt(fort,0)}% geschafft</div>
+    <div class="balken"><i style="width:${fort}%;background:var(--gruen)"></i></div>
+    <div class="dim mono" style="font-size:11px;margin-top:8px">TAGESLIMIT (EIGENES ${r.sicher_tag}%) · NOCH ${fmt(p.rest_tagesverlust_sicher)}</div>
+    <div class="balken"><i style="width:${tagVerbraucht}%;background:${farbe}"></i></div>
+    <div class="zeile" style="margin-top:6px"><span>LUFT FTMO TAG ${r.max_tag}%</span><b class="zahl">${fmt(p.rest_tagesverlust_ftmo)}</b></div>
+    <div class="zeile"><span>LUFT FTMO GESAMT ${r.max_gesamt}%</span><b class="zahl">${fmt(p.rest_gesamtverlust)}</b></div>`;
+  positionen=k.positionen;$('pos-zahl').textContent=positionen.length;
+  $('positionen').innerHTML=positionen.length?positionen.map(x=>`<div class="pos">
+    <div class="k"><span>${esc(x.symbol)} · ${x.richtung==='Kauf'?'<span class="gruen">KAUF</span>':'<span class="rot">VERKAUF</span>'}</span><span class="zahl ${x.gewinn>=0?'gruen':'rot'}">${fmt(x.gewinn)}</span></div>
+    <div class="mono dim" style="font-size:12px">${x.volumen} Lot ab ${preis(x.einstieg)} · TP ${x.tp?preis(x.tp):'–'}</div>
+    ${x.sl?`<div class="mono dim" style="font-size:12px">SL ${preis(x.sl)}</div>`:'<div class="warn">⚠ KEIN STOP-LOSS</div>'}</div>`).join(''):'<div class="leer">Keine offenen Positionen.</div>';
+}
+
+/* ---------- Marktüberblick ---------- */
+async function ueberblickLaden(){
+  let d;try{d=await holen('/api/ueberblick')}catch(e){return}
+  if(d.fehler){$('ueberblick').innerHTML=`<div class="leer">${esc(d.fehler)}</div>`;return}
+  $('ueberblick').innerHTML=d.maerkte.map(m=>m.fehler?`<div class="markt" style="cursor:default"><span class="n">${esc(m.name)}</span><span class="t" style="grid-column:2/4">${esc(m.fehler.slice(0,60))}</span></div>`:
+    `<button class="markt" data-name="${esc(m.name)}"><span><span class="n">${esc(m.name)}</span><br><span class="t ${trendFarbe(m.trend)}">${esc(m.trend)} · RSI ${fmt(m.rsi,0)}</span></span>
+     <span class="zahl">${fmt(m.preis,m.stellen)}</span><span class="zahl ${m.prozent>=0?'gruen':'rot'}">${m.prozent>=0?'+':''}${fmt(m.prozent,2)}%</span></button>`).join('');
+}
+$('ueberblick').onclick=e=>{const b=e.target.closest('[data-name]');if(b)symbolWaehlen(b.dataset.name)};
+
+/* ---------- Jarvis ---------- */
+let dialogSchluessel='';
+async function jarvisLaden(){
+  let z;try{z=await holen('/api/zustand')}catch(e){$('modus').textContent='OFFLINE';return}
+  $('modus').textContent=z.modus.toUpperCase();
+  const farbe={bereit:'var(--cyan)',hoert:'var(--gruen)',denkt:'var(--amber)',spricht:'var(--cyan)',wartet:'var(--rot)'}[z.modus]||'var(--cyan)';
+  $('status-punkt').style.background=farbe;$('status-punkt').style.boxShadow=`0 0 10px ${farbe}`;
+  const schl=JSON.stringify(z.dialog);
+  if(schl!==dialogSchluessel){dialogSchluessel=schl;
+    $('dialog').innerHTML=z.dialog.slice(-12).map(e=>`<div class="${e.wer==='du'?'du':'jarvis'}">${esc(e.text)}</div>`).join('');
+    $('dialog-box').scrollTop=1e9}
+  const f=z.freigabe;$('freigabe').hidden=!f;
+  if(f&&$('freigabe').dataset.id!==String(f.id)){$('freigabe').dataset.id=f.id;$('freigabe-titel').textContent=f.beschreibung;$('freigabe-details').textContent=f.details}
+}
+$('freigabe-ja').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:true});
+$('freigabe-nein').onclick=()=>senden('/api/freigabe',{id:+$('freigabe').dataset.id,ja:false});
+const fragen=t=>senden('/api/frage',{text:t}).then(jarvisLaden);
+$('eingabe').onsubmit=e=>{e.preventDefault();const t=$('frage').value.trim();if(t){$('frage').value='';fragen(t)}};
+$('analyse-knopf').onclick=()=>fragen(`Analysiere ${symbol} auf ${tf} für Daytrading: Trend, wichtige Zonen und ob es gerade ein Setup gibt – mit Einstieg, Stop-Loss, Ziel und Chance-Risiko-Verhältnis. Kurz.`);
+
+/* ---------- Auswahl ---------- */
+function symbolWaehlen(s){symbol=s;speicher.symbol=s;merken();letzteZeit=0;linienSchluessel='';
+  document.querySelectorAll('#symbole .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===s));chartLaden(true)}
+function tfWaehlen(t){tf=t;speicher.tf=t;merken();letzteZeit=0;
+  document.querySelectorAll('#zeitrahmen .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));chartLaden(true)}
+['M1','M5','M15','M30','H1','H4','D1'].forEach(t=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.dataset.t=t;
+  b.setAttribute('aria-pressed',t===tf);b.onclick=()=>tfWaehlen(t);$('zeitrahmen').appendChild(b)});
+[['ema','t-ema'],['zonen','t-zonen'],['pivots','t-pivots'],['pos','t-pos']].forEach(([k,id])=>{$(id).setAttribute('aria-pressed',schalter[k]);
+  $(id).onclick=()=>{schalter[k]=!schalter[k];speicher.schalter=schalter;merken();$(id).setAttribute('aria-pressed',schalter[k]);linienSchluessel='';chartLaden(false)}});
+
+holen('/api/trading_einstellungen').then(e=>{
+  e.maerkte.forEach(s=>{const b=document.createElement('button');b.className='chip';b.textContent=s;b.dataset.s=s;b.onclick=()=>symbolWaehlen(s);$('symbole').appendChild(b)});
+  $('ueberblick-tf').textContent=e.zeitrahmen;
+  if(!speicher.tf){tf=e.zeitrahmen;document.querySelectorAll('#zeitrahmen .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===tf))}
+  symbolWaehlen(e.maerkte.includes(speicher.symbol)?speicher.symbol:e.maerkte[0]);
+}).catch(()=>{$('chart-meldung').textContent='Keine Verbindung zu Jarvis – läuft das schwarze Fenster?'});
+
+setInterval(()=>symbol&&chartLaden(false),3000);
+kontoLaden();setInterval(kontoLaden,3000);
+ueberblickLaden();setInterval(ueberblickLaden,20000);
+jarvisLaden();setInterval(jarvisLaden,1500);
+</script>
+</body>
+</html>

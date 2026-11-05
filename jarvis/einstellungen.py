@@ -56,6 +56,10 @@ HYPERLIQUID_BERICHT_LOKAL = PROJEKT_ORDNER / "berichte" / "aktuell.md"
 HYPERLIQUID_BERICHT_URL = "https://raw.githubusercontent.com/YusufAydar/Jarvzz/main/berichte/aktuell.md"
 
 # ---------- Trading (MetaTrader 5 / FTMO) ----------
+# MetaTrader 5 benutzen? (False = Jarvis fasst MT5 gar nicht an)
+MT5_AKTIV = True
+# Darf Jarvis MT5 selbst starten, wenn es geschlossen ist? (False = nur verbinden, wenn du es geöffnet hast)
+MT5_AUTOMATISCH_STARTEN = False
 # Deine Märkte – so wie du sie aussprichst. Jarvis findet den genauen Namen beim Broker selbst
 # (bei FTMO z. B. "US30.cash").
 TRADING_MAERKTE = ["EURUSD", "XAUUSD", "US30", "US100", "GER40", "BTCUSD"]

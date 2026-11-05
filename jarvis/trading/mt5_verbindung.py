@@ -38,10 +38,15 @@ class MT5Fehler(Exception):
 
 def verbinden():
     """Stellt die Verbindung zum laufenden MetaTrader 5 her (falls noch nicht geschehen)."""
+    if not einstellungen.MT5_AKTIV:
+        raise MT5Fehler("MetaTrader 5 ist in den Einstellungen ausgeschaltet (MT5_AKTIV = False).")
     if mt5 is None:
         raise MT5Fehler("Das Paket MetaTrader5 fehlt. Bitte aktualisieren.bat ausführen (nur unter Windows).")
     if mt5.terminal_info() is not None:
         return
+    # MT5 nie selbst starten – nur verbinden, wenn du es schon geöffnet hast
+    if not einstellungen.MT5_AUTOMATISCH_STARTEN and not mt5_laeuft():
+        raise MT5Fehler("MetaTrader 5 ist nicht geöffnet. Öffne MT5 und melde dich an, dann klappt es.")
     # Höchstens 15 Sekunden auf MT5 warten, damit Jarvis nicht hängen bleibt
     parameter = {"timeout": 15000}
     login = os.environ.get("MT5_LOGIN")
@@ -51,6 +56,16 @@ def verbinden():
     if not mt5.initialize(**parameter):
         raise MT5Fehler(f"Keine Verbindung zu MetaTrader 5 ({mt5.last_error()}). "
                         "Ist MT5 geöffnet und mit deinem Konto angemeldet?")
+
+
+def mt5_laeuft():
+    """Prüft, ob das MetaTrader-5-Programm (terminal64.exe) gerade läuft."""
+    try:
+        import psutil
+        return any((p.info["name"] or "").lower() in ("terminal64.exe", "terminal.exe")
+                   for p in psutil.process_iter(["name"]))
+    except Exception:
+        return False
 
 
 def neu_verbinden():

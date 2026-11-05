@@ -171,6 +171,16 @@ class TestWerkzeuge(unittest.TestCase):
         self.assertIn("verbunden mit Konto 123", text)
         self.assertNotIn("Pw!123", text + "".join(gefragt))          # Passwort wird nirgends angezeigt
 
+    def test_mt5_wird_nicht_selbst_gestartet(self):
+        fake = FakeMT5()
+        fake.terminal_info = lambda: None                 # MT5 ist nicht verbunden ...
+        fake.initialize = mock.Mock(return_value=True)
+        with mock.patch.object(mt, "mt5", fake), mock.patch.object(mt, "mt5_laeuft", return_value=False):
+            with self.assertRaises(mt.MT5Fehler) as fehler:  # ... und nicht geöffnet
+                mt.verbinden()
+        self.assertIn("nicht geöffnet", str(fehler.exception))
+        fake.initialize.assert_not_called()               # also wird es auch nicht gestartet
+
     def test_ohne_mt5_klare_meldung(self):
         with mock.patch.object(mt, "mt5", None):
             self.assertIn("MetaTrader5 fehlt", self.kasten.ausfuehren("konto_status", {}))
