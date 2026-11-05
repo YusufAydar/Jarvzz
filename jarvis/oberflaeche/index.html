@@ -349,7 +349,7 @@ async function zustandLaden(){
     // Log
     $('log').innerHTML=z.log.slice().reverse().map(l=>`<div><span class="z">${esc(l.zeit)}</span><span class="log-${l.art}">${esc(l.text)}</span></div>`).join('')+'<div><span class="z"></span><span class="dim cursor">warte auf Aktivität</span></div>';
     $('log-zahl').textContent=z.log.length+' LOG';
-  }catch(e){$('online').textContent='OFFLINE';$('online-punkt').style.background='var(--rot)';modus='bereit';$('modus-text').textContent='KEINE VERBINDUNG ZU JARVIS'}
+  }catch(e){$('online').textContent='OFFLINE';$('online-punkt').style.background='var(--rot)';modus='bereit';$('modus-text').textContent='KEINE VERBINDUNG – SCHWARZES FENSTER PRÜFEN'}
 }
 function vorZeit(sek){const m=Math.round((Date.now()/1000-sek)/60);return m<1?'JETZT':m<60?`VOR ${m} MIN`:`VOR ${Math.round(m/60)} STD`}
 setInterval(zustandLaden,1000);zustandLaden();

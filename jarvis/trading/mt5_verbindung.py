@@ -42,11 +42,12 @@ def verbinden():
         raise MT5Fehler("Das Paket MetaTrader5 fehlt. Bitte aktualisieren.bat ausführen (nur unter Windows).")
     if mt5.terminal_info() is not None:
         return
-    parameter = {}
+    # Höchstens 15 Sekunden auf MT5 warten, damit Jarvis nicht hängen bleibt
+    parameter = {"timeout": 15000}
     login = os.environ.get("MT5_LOGIN")
     if login:
-        parameter = {"login": int(login), "password": os.environ.get("MT5_PASSWORT", ""),
-                     "server": os.environ.get("MT5_SERVER", "")}
+        parameter.update({"login": int(login), "password": os.environ.get("MT5_PASSWORT", ""),
+                          "server": os.environ.get("MT5_SERVER", "")})
     if not mt5.initialize(**parameter):
         raise MT5Fehler(f"Keine Verbindung zu MetaTrader 5 ({mt5.last_error()}). "
                         "Ist MT5 geöffnet und mit deinem Konto angemeldet?")
