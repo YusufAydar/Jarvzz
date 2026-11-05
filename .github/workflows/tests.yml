@@ -23,6 +23,12 @@ jobs:
       - name: Automatische Tests
         run: python -m unittest discover tests -v
 
+      - name: Jarvis-Tests (ohne Mikrofon und ohne API-Schlüssel)
+        working-directory: jarvis
+        run: |
+          pip install "anthropic>=2.5.0"
+          python -m unittest discover tests -v
+
       - name: Probelauf mit 10 echten Tradern
         run: python main.py --anzahl 10 --db probelauf/test.db --berichte probelauf
 

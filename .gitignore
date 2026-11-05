@@ -3,3 +3,8 @@ daten/
 probelauf/
 __pycache__/
 *.pyc
+
+# Jarvis: geheimer API-Schlüssel und persönliche Termine nie hochladen
+jarvis/.env
+jarvis/daten/
+jarvis/.venv/

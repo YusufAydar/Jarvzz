@@ -2,7 +2,14 @@
 
 Yusuf und Markos eigener Jarvzz.
 
-Erstes Projekt: **Analyse der Top-Trader auf Hyperliquid.**
+Das Repository enthält zwei Teile:
+
+1. **🤖 Jarvis: Sprachassistent für Windows** → Anleitung in [`jarvis/README.md`](jarvis/README.md)
+2. **📈 Analyse der Top-Trader auf Hyperliquid** → wird unten erklärt. Jarvis kann diesen Bericht vorlesen.
+
+---
+
+## Hyperliquid Top-Trader-Analyse
 Das Programm schaut sich jeden Tag an, was die erfolgreichsten Trader auf
 [Hyperliquid](https://app.hyperliquid.xyz) machen, und schreibt dazu einen Bericht.
 
@@ -32,6 +39,7 @@ Den neuesten Bericht findest du immer unter **[`berichte/aktuell.md`](berichte/a
 
 | Datei | Wofür ist sie da? |
 |---|---|
+| `jarvis/` | **Der Sprachassistent Jarvis.** Alle Dateien darin erklärt [`jarvis/README.md`](jarvis/README.md). |
 | `main.py` | **Startpunkt.** Ruft alle anderen Teile in der richtigen Reihenfolge auf. Diese Datei startest du. |
 | `config.py` | **Einstellungen.** Wie viele Trader, welcher Zeitraum, ab wann „Einigkeit“ gilt usw. Hier kannst du gefahrlos Zahlen ändern. |
 | `hyperliquid_api.py` | **Verbindung zu Hyperliquid.** Lädt die Rangliste, die Trades und die offenen Positionen aus dem Internet. |
