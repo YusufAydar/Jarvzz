@@ -1,10 +1,10 @@
-# Bericht von Jarvis – 06.11.2026 13:08
+# Bericht von Jarvis – 06.11.2026 14:14
 
 PC: DESKTOP-3R9GT50 (Windows 11)
 
 ## Nachricht von Jarvis
 
-Wunsch vom Nutzer (keine eigene Änderung von mir): Er möchte sehen, dass der Trading-Roboter überhaupt funktioniert, also Trades öffnet, verwaltet und schließt. Im Paper-Konto gab es heute 0 Trades, weil die Filter sehr streng sind (H1 seitwärts, kein Pullback, Confidence unter 60, CRV unter 1,5). Bitte einen optionalen, klar gekennzeichneten 'Testmodus' nur für Paper-Trading einbauen: lockerere Einstiegsfilter, z. B. Confidence ab 45 und kein Pullback-Zwang, aber gleiches Risiko pro Trade und gleicher Tagesstopp. Getrennte Statistik, damit die echte Strategie-Auswertung sauber bleibt. Info: Der Backtest ist heute auf Yahoo zurückgefallen (Dukascopy HTTP 503). In etwa 2 Monaten gab es nur 10 Trades, US100 1 von 7 gewonnen.
+Auftrag vom Nutzer (keine eigene Änderung von mir): Bitte ein Werkzeug für MANUELLE Paper-Trades bauen, z. B. paper_trade_eroeffnen(symbol, richtung, stop, ziel, risiko_prozent optional) und paper_trade_schliessen(id). Umsetzung bitte IN der TradingEngine (trader/engine.py bzw. PaperKonto.eroeffnen in paper.py), nicht als externes Plugin – sonst überschreibt die laufende Engine die Kontodatei. Anforderungen: nur Paper (Stufe 1), niemals echte Orders; Risikoprüfung über risiko.pruefen und Positionsgröße über risiko.positionsgroesse; Trades als 'manuell' markieren und getrennt von der Strategie-Statistik auswerten, damit Win-Rate/Profit-Faktor/Kalibrierung des Roboters nicht verfälscht werden; Begründung im Protokoll vermerken; optional Warnung bei High-Impact-News in den nächsten 30 Minuten. Hintergrund: Nutzer wollte heute 14:12 einen Test-Trade, Roboter wartete regelkonform (kein Setup, NFP um 14:30).
 
 ## Eigene Änderungen auf dem PC
 
