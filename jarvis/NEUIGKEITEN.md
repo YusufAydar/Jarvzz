@@ -4,6 +4,10 @@ Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub:
 Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
 die neuesten Einträge (sie stehen in seiner Grundanweisung).
 
+## 2026-11-06 · Kurs-Download für Backtests robuster
+- Dukascopy-Tage, die beim ersten Mal nicht laden, werden am Ende einzeln noch einmal versucht.
+- `historie.m15_laden` kann jetzt auch nur mit bereits gespeicherten Tagen arbeiten (ohne Download).
+
 ## 2026-11-06 · Vier Profi-Strategien im Vergleich, TradingView-Fehler behoben
 - Neu: Der Roboter kennt jetzt vier Strategien – Trend-Pullback (bisher), London-Breakout (Spanne 09–10 Uhr),
   New-York-Breakout (Spanne 15:30–16 Uhr) und Mean-Reversion (Bollinger-Bänder in Seitwärtsphasen).

@@ -75,13 +75,15 @@ def zu_m15(kerzen_1m):
     return [bloecke[b] for b in sorted(bloecke)]
 
 
-def _tag_laden(dukas_symbol, tag, bereich, ordner):
+def _tag_laden(dukas_symbol, tag, bereich, ordner, nur_gespeichert=False):
     """Lädt einen Tag (aus dem Zwischenspeicher oder von Dukascopy). Gibt M15-Kerzen zurück."""
     datei = ordner / dukas_symbol / f"{tag.isoformat()}.csv"
     if datei.exists():
         zeilen = datei.read_text(encoding="utf-8").split()
         return [dict(zip(("zeit", "open", "high", "low", "close"), (int(z.split(",")[0]),
                      *map(float, z.split(",")[1:])))) for z in zeilen]
+    if nur_gespeichert:
+        raise FileNotFoundError(f"{tag} nicht im Zwischenspeicher")
     url = URL.format(sym=dukas_symbol, jahr=tag.year, monat=tag.month - 1, tag=tag.day)
     anfrage = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     roh = None
@@ -114,10 +116,14 @@ def _tag_laden(dukas_symbol, tag, bereich, ordner):
     return m15
 
 
-def m15_laden(symbol, tage=730, ordner=None, fortschritt=None):
+def m15_laden(symbol, tage=730, ordner=None, fortschritt=None, max_fehler_anteil=0.05, info=None,
+              nur_gespeichert=False):
     """
     Lädt die letzten `tage` Kalendertage als M15-Kerzen (ältester zuerst).
     fortschritt: optionale Funktion(erledigt, gesamt) für eine Anzeige.
+    max_fehler_anteil: so viele Tage dürfen fehlen, bevor abgebrochen wird (0.05 = 5 %).
+    info: optionales dict, in das die Anzahl fehlender Tage geschrieben wird ("fehlend").
+    nur_gespeichert: nichts herunterladen, nur den Zwischenspeicher verwenden.
     """
     eintrag = SYMBOLE.get(symbol.upper().replace("/", "").replace(".CASH", ""))
     if not eintrag:
@@ -134,7 +140,7 @@ def m15_laden(symbol, tage=730, ordner=None, fortschritt=None):
 
     def laden(i):
         try:
-            ergebnis[i] = _tag_laden(dukas_symbol, handelstage[i], bereich, ordner)
+            ergebnis[i] = _tag_laden(dukas_symbol, handelstage[i], bereich, ordner, nur_gespeichert)
         except Exception:
             ergebnis[i] = []
             fehlgeschlagen.append(handelstage[i])
@@ -144,9 +150,18 @@ def m15_laden(symbol, tage=730, ordner=None, fortschritt=None):
 
     with ThreadPoolExecutor(max_workers=3) as pool:   # höflich: wenige gleichzeitige Anfragen
         list(pool.map(laden, range(len(handelstage))))
+    # Zweiter Versuch für fehlgeschlagene Tage: einzeln und langsam (Dukascopy drosselt bei zu vielen Anfragen)
+    for tag in ([] if nur_gespeichert else sorted(fehlgeschlagen)):
+        try:
+            ergebnis[handelstage.index(tag)] = _tag_laden(dukas_symbol, tag, bereich, ordner)
+            fehlgeschlagen.remove(tag)
+        except Exception:
+            time.sleep(1)
     # Die letzten 2 Tage stellt Dukascopy manchmal erst später bereit – die zählen nicht als Fehler
     echte_fehler = [t for t in fehlgeschlagen if t < heute - timedelta(days=2)]
-    if len(echte_fehler) > max(1, len(handelstage) * 0.05):
+    if info is not None:
+        info["fehlend"] = len(echte_fehler)
+    if len(echte_fehler) > max(1, len(handelstage) * max_fehler_anteil):
         raise ValueError(f"Dukascopy: {len(fehlgeschlagen)} von {len(handelstage)} Tagen nicht ladbar – "
                          "später nochmal versuchen (schon geladene Tage bleiben gespeichert).")
     kerzen = [k for tag in ergebnis for k in tag]

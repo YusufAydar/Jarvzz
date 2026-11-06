@@ -63,7 +63,7 @@ class TestHistorie(unittest.TestCase):
             historie.m15_laden("FANTASIE", 5)
 
     def test_laden_ueber_mehrere_tage_in_richtiger_reihenfolge(self):
-        def tag_laden(sym, tag, bereich, ordner):
+        def tag_laden(sym, tag, bereich, ordner, nur_gespeichert=False):
             t = int(datetime(tag.year, tag.month, tag.day, tzinfo=timezone.utc).timestamp())
             return [{"zeit": t, "open": 1, "high": 1, "low": 1, "close": 1}]
         with mock.patch.object(historie, "_tag_laden", side_effect=tag_laden):
@@ -71,6 +71,28 @@ class TestHistorie(unittest.TestCase):
         zeiten = [x["zeit"] for x in k]
         self.assertEqual(zeiten, sorted(zeiten))
         self.assertEqual(len(k), 12)   # 14 Tage ohne 2 Samstage
+
+    def test_zweiter_versuch_und_fehlertoleranz(self):
+        versuche = {}
+
+        def tag_laden(sym, tag, bereich, ordner, nur_gespeichert=False):
+            versuche[tag] = versuche.get(tag, 0) + 1
+            if tag.day % 3 == 0 and versuche[tag] == 1:   # erster Versuch scheitert, zweiter klappt
+                raise ConnectionError("gedrosselt")
+            return [{"zeit": tag.toordinal(), "open": 1, "high": 1, "low": 1, "close": 1}]
+        with mock.patch.object(historie, "_tag_laden", side_effect=tag_laden), \
+                mock.patch.object(historie.time, "sleep"):
+            historie.m15_laden("EURUSD", 30)
+        self.assertTrue(any(v == 2 for v in versuche.values()))
+
+    def test_nur_gespeichert_laedt_nichts_herunter(self):
+        with tempfile.TemporaryDirectory() as ordner, \
+                mock.patch.object(historie.urllib.request, "urlopen") as netz:
+            info = {}
+            with self.assertRaises(ValueError):
+                historie.m15_laden("EURUSD", 20, ordner=ordner, nur_gespeichert=True, info=info)
+            self.assertFalse(netz.called)
+            self.assertGreater(info["fehlend"], 10)
 
 
 if __name__ == "__main__":

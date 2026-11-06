@@ -17,10 +17,15 @@ on:
       - ".github/workflows/backtest.yml"
       - "werkzeuge_entwicklung/backtest_lauf.py"
 
+# Nie zwei Läufe gleichzeitig (sonst bremst Dukascopy beide aus) – ein neuer Lauf ersetzt den alten
+concurrency:
+  group: roboter-backtest
+  cancel-in-progress: true
+
 jobs:
   backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
 
@@ -29,20 +34,36 @@ jobs:
           python-version: "3.12"
 
       # Heruntergeladene Kurse aufheben, damit der nächste Lauf schnell ist
-      - name: Kurs-Historie aus dem Zwischenspeicher
-        uses: actions/cache@v4
+      - name: Kurs-Historie aus dem Zwischenspeicher holen
+        uses: actions/cache/restore@v4
         with:
           path: jarvis/daten/historie
           key: historie-${{ github.run_id }}
           restore-keys: historie-
 
-      - name: Backtest rechnen
-        run: python werkzeuge_entwicklung/backtest_lauf.py "${{ github.event.inputs.tage || '730' }}"
+      - name: Kurse laden (höchstens 150 Minuten, Rest beim nächsten Lauf)
+        timeout-minutes: 150
+        continue-on-error: true
+        run: python werkzeuge_entwicklung/backtest_lauf.py laden "${{ github.event.inputs.tage || '730' }}"
+
+      # Immer sichern – auch wenn der Download abgebrochen wurde
+      - name: Kurs-Historie zwischenspeichern
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: jarvis/daten/historie
+          key: historie-${{ github.run_id }}
+
+      - name: Strategien vergleichen
+        timeout-minutes: 120
+        run: python werkzeuge_entwicklung/backtest_lauf.py rechnen "${{ github.event.inputs.tage || '730' }}"
 
       - name: Ergebnis anzeigen
+        if: always()
         run: cat backtest_ergebnis.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ergebnis zum Download anhängen
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backtest-ergebnis
