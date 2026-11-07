@@ -19,17 +19,18 @@ import random
 from trader import paper, risiko, strategie, strategien  # noqa: F401
 
 
-def h1_aus_m15(kerzen):
-    """Baut aus M15-Kerzen H1-Kerzen. Jede bekommt 'ende' = Zeitpunkt, ab dem sie abgeschlossen ist."""
+def h1_aus_m15(kerzen, sekunden=3600):
+    """Baut aus kleineren Kerzen größere (Standard: M15 -> H1; mit sekunden=4*3600: H1 -> H4).
+    Jede bekommt 'ende' = Zeitpunkt, ab dem sie abgeschlossen ist."""
     stunden = {}
     for k in kerzen:
-        h = k["zeit"] // 3600
+        h = k["zeit"] // sekunden
         s = stunden.get(h)
         if s is None:
-            stunden[h] = dict(k, zeit=h * 3600)
+            stunden[h] = dict(k, zeit=h * sekunden)
         else:
             s["high"], s["low"], s["close"] = max(s["high"], k["high"]), min(s["low"], k["low"]), k["close"]
-    return [dict(s, ende=h * 3600 + 3600) for h, s in sorted(stunden.items())]
+    return [dict(s, ende=h * sekunden + sekunden) for h, s in sorted(stunden.items())]
 
 
 def stellen_schaetzen(preis):
@@ -37,13 +38,17 @@ def stellen_schaetzen(preis):
 
 
 def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300, strategie_name="pullback",
-             variante="basis"):
+             variante="basis", zeitrahmen="M15"):
     """kerzen: M15-Kerzen (ältester zuerst). Gibt ein dict mit Trades, Statistik und Auswertungen zurück.
     strategie_name: eine aus trader.strategien.STRATEGIEN (Standard: Trend-Pullback).
-    variante: eine aus trader.strategien.VARIANTEN (Trade-Management/Uhrzeit), Standard "basis"."""
+    variante: eine aus trader.strategien.VARIANTEN (Trade-Management/Uhrzeit), Standard "basis".
+    zeitrahmen: "M15" (Einstieg M15, Trend H1) oder "H1" (Einstieg H1, Trend H4 – für den 20-Jahres-Test)."""
     if len(kerzen) < fenster + 50:
         raise ValueError(f"Zu wenig Kursdaten für einen Backtest ({len(kerzen)} Kerzen).")
-    h1 = [dict(k, ende=k["zeit"] + 3600) for k in kerzen_h1] if kerzen_h1 else h1_aus_m15(kerzen)
+    kerze_sekunden = 3600 if zeitrahmen == "H1" else 900
+    trend_sekunden = 4 * 3600 if zeitrahmen == "H1" else 3600
+    h1 = [dict(k, ende=k["zeit"] + trend_sekunden) for k in kerzen_h1] if kerzen_h1 else \
+        h1_aus_m15(kerzen, trend_sekunden)
     h1_enden = [k["ende"] for k in h1]
     kosten = regeln.kosten.get(symbol.upper(), 0.0)
     schritt = regeln.einheiten_schritt.get(symbol.upper(), 0.01)
@@ -53,7 +58,7 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300,
 
     for i in range(fenster, len(kerzen) - 1):
         k = kerzen[i]
-        ende = k["zeit"] + 15 * 60
+        ende = k["zeit"] + kerze_sekunden
         konto.kerze_pruefen(symbol, k)
         konto.tag_pruefen(k["zeit"], {symbol: k["close"]})
         if konto.zustand["offene"]:
@@ -94,15 +99,26 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300,
         konto.eroeffnen(symbol, signal, einheiten, naechste["zeit"], preis=einstieg)
 
     letzte = kerzen[-1]
-    konto.alle_schliessen({symbol: letzte["close"]}, letzte["zeit"] + 900, "Ende des Backtests")
+    konto.alle_schliessen({symbol: letzte["close"]}, letzte["zeit"] + kerze_sekunden, "Ende des Backtests")
     trades = konto.zustand["trades"]
-    return {"symbol": symbol, "strategie": strategien.NAMEN[strategie_name] + ("" if variante == "basis" else f" [{variante}]"),
+    return {"symbol": symbol, "zeitrahmen": zeitrahmen, "strategie": strategien.NAMEN[strategie_name] + ("" if variante == "basis" else f" [{variante}]"),
             "von": kerzen[fenster]["zeit"], "bis": letzte["zeit"], "kerzen": len(kerzen),
             "start": start, "ende_balance": konto.zustand["balance"], "signale": signale, "trades": trades,
             "statistik": paper.statistik(trades, start), "kalibrierung": kalibrierung(trades),
             "stabilitaet": stabilitaet(trades, start), "monte_carlo": monte_carlo(trades, start),
-            "quartale": quartale(trades),
+            "quartale": quartale(trades), "jahre": jahre(trades, start),
             "abgelehnt": abgelehnt, "warte_gruende": warte_gruende}
+
+
+def jahre(trades, start):
+    """Ergebnis je Kalenderjahr in Prozent vom Startkapital – zeigt, ob es in JEDER Marktphase funktioniert."""
+    from datetime import datetime
+    j = {}
+    for t in trades:
+        x = j.setdefault(datetime.fromtimestamp(t["geschlossen"]).year, {"trades": 0, "netto": 0.0})
+        x["trades"] += 1
+        x["netto"] += t["ergebnis"]
+    return {k: dict(v, prozent=v["netto"] / start * 100) for k, v in sorted(j.items())}
 
 
 def quartale(trades):
@@ -176,6 +192,10 @@ def urteil(ergebnis, regeln):
     st = ergebnis["stabilitaet"]
     if st and (st["spaet"]["profit_faktor"] or 0) < 1.0:
         probleme.append("im letzten Drittel nicht mehr profitabel")
+    if ergebnis.get("zeitrahmen") == "H1" and len(ergebnis.get("jahre") or {}) >= 3:
+        plus = sum(1 for v in ergebnis["jahre"].values() if v["netto"] > 0)
+        if plus < 0.6 * len(ergebnis["jahre"]):
+            probleme.append(f"nur {plus} von {len(ergebnis['jahre'])} Jahren im Plus")
     return ("BESTANDEN", "alle Kriterien erfüllt") if not probleme else ("NICHT BESTANDEN", "; ".join(probleme))
 
 
@@ -185,7 +205,7 @@ def text(ergebnis, regeln):
     f = lambda x, n=2: "–" if x is None else ("∞" if x == float("inf") else f"{x:.{n}f}")
     status, warum = urteil(ergebnis, regeln)
     zeilen = [
-        f"BACKTEST {ergebnis['symbol']} – {ergebnis.get('strategie', 'Trend-Pullback')} (M15), {datetime.fromtimestamp(ergebnis['von']):%d.%m.%Y} bis "
+        f"BACKTEST {ergebnis['symbol']} – {ergebnis.get('strategie', 'Trend-Pullback')} ({ergebnis.get('zeitrahmen', 'M15')}), {datetime.fromtimestamp(ergebnis['von']):%d.%m.%Y} bis "
         f"{datetime.fromtimestamp(ergebnis['bis']):%d.%m.%Y}, {ergebnis['kerzen']} Kerzen",
         f"Urteil: {status} – {warum}",
         f"Trades {s['trades']} (Signale {ergebnis['signale']}), Win-Rate {f((s['win_rate'] or 0) * 100, 0)} %, "
@@ -199,7 +219,11 @@ def text(ergebnis, regeln):
     st = ergebnis["stabilitaet"]
     if st:
         zeilen.append(f"Stabilität: erste 2/3 PF {f(st['frueh']['profit_faktor'])}, letztes 1/3 PF {f(st['spaet']['profit_faktor'])}")
-    if ergebnis.get("quartale") and len(ergebnis["quartale"]) > 1:
+    if ergebnis.get("zeitrahmen") == "H1" and ergebnis.get("jahre"):
+        plus = sum(1 for v in ergebnis["jahre"].values() if v["netto"] > 0)
+        zeilen.append(f"Je Jahr ({plus} von {len(ergebnis['jahre'])} im Plus): " + "; ".join(
+            f"{k} {v['prozent']:+.1f} %" for k, v in ergebnis["jahre"].items()))
+    elif ergebnis.get("quartale") and len(ergebnis["quartale"]) > 1:
         zeilen.append("Je Quartal: " + "; ".join(f"{k} {v['trades']} Trades {v['summe_r']:+.1f} R"
                                                   for k, v in ergebnis["quartale"].items()))
     mc = ergebnis["monte_carlo"]
@@ -215,9 +239,9 @@ def text(ergebnis, regeln):
     return "\n".join(zeilen)
 
 
-def vergleich(symbol, kerzen, regeln, start=10000.0, namen=None, fenster=300):
+def vergleich(symbol, kerzen, regeln, start=10000.0, namen=None, fenster=300, zeitrahmen="M15"):
     """Testet mehrere Strategien auf GENAU denselben Kursdaten. Gibt die Ergebnisse sortiert zurück (beste zuerst)."""
-    ergebnisse = [backtest(symbol, kerzen, regeln, start, fenster=fenster, strategie_name=n)
+    ergebnisse = [backtest(symbol, kerzen, regeln, start, fenster=fenster, strategie_name=n, zeitrahmen=zeitrahmen)
                   for n in (namen or strategien.STRATEGIEN)]
 
     def rang(e):
@@ -239,15 +263,19 @@ def vergleich_text(ergebnisse, regeln):
         zeilen.append(f"  {e['strategie']:<18} {s['trades']:>4} Trades, Win {f((s['win_rate'] or 0) * 100, 0):>3} %, "
                       f"PF {f(s['profit_faktor']):>5}, Ø {f(s['schnitt_r']):>5} R, Netto {s['netto']:+9.2f} $, "
                       f"DD {s['max_drawdown_prozent']:4.1f} %, spätes Drittel PF "
-                      f"{f(st['spaet']['profit_faktor']) if st else '–'} -> {status}")
+                      f"{f(st['spaet']['profit_faktor']) if st else '–'}"
+                      + (f", Jahre im Plus {sum(1 for v in e['jahre'].values() if v['netto'] > 0)}/{len(e['jahre'])}"
+                         if e.get("zeitrahmen") == "H1" and e.get("jahre") else "") + f" -> {status}")
     return "\n".join(zeilen)
 
 
-def varianten_vergleich(symbol, kerzen, regeln, start=10000.0, strategie_name="pullback", namen=None, fenster=300):
+def varianten_vergleich(symbol, kerzen, regeln, start=10000.0, strategie_name="pullback", namen=None, fenster=300,
+                        zeitrahmen="M15"):
     """Testet eine Strategie mit allen Varianten (Trade-Management/Uhrzeit) auf denselben Kursdaten.
     Gegen Selbstbetrug: Gewählt wird nach den ERSTEN zwei Dritteln, das letzte Drittel ist die
     Kontrolle („unbekannte“ Daten). Nur wenn es dort auch passt, taugt die Variante."""
-    ergebnisse = [backtest(symbol, kerzen, regeln, start, fenster=fenster, strategie_name=strategie_name, variante=n)
+    ergebnisse = [backtest(symbol, kerzen, regeln, start, fenster=fenster, strategie_name=strategie_name, variante=n,
+                           zeitrahmen=zeitrahmen)
                   for n in (namen or strategien.VARIANTEN)]
 
     def frueh_pf(e):

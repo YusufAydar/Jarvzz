@@ -9,7 +9,7 @@ on:
     inputs:
       anzahl:
         description: "Wie viele Trader?"
-        default: "10"
+        default: "100"
 
 permissions:
   contents: write             # nötig, damit der Bericht ins Repo gespeichert werden darf
@@ -19,13 +19,13 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Anzahl Trader beim automatischen Lauf. Wenn alles klappt: auf 100 erhöhen.
-  ANZAHL: ${{ github.event.inputs.anzahl || '10' }}
+  # Anzahl Trader beim automatischen Lauf (100 = mehr Daten für die Muster-Auswertung)
+  ANZAHL: ${{ github.event.inputs.anzahl || '100' }}
 
 jobs:
   bericht:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 150   # beim ersten Lauf mit 100 Tradern dauert das Laden länger
     steps:
       - name: Code holen
         uses: actions/checkout@v4

@@ -168,7 +168,7 @@ def bericht(tabelle, anzahl_trader, anzahl_trades, zeitraum):
          "", "> Ehrlich: Krypto ≠ Gold/Forex, und wer gerade oben steht, hatte oft auch Glück. Diese Muster sind",
          "> **Ideen für eigene Regeln** – sie zählen erst, wenn sie im eigenen 2-Jahres-Backtest bestehen. "
          "Es werden keine Trades kopiert.", ""]
-    gut, schlecht = erkenntnisse(tabelle)
+    gut, schlecht = erkenntnisse(tabelle, min_trader=max(3, anzahl_trader // 20))
     z.append("## Was bei den Profis Geld bringt")
     z += [f"- **{wert}** ({name}): {d['trades']} Trades von {len(d['trader'])} Tradern, Treffer "
           f"{d['gewinner'] / d['trades'] * 100:.0f} %, im Schnitt {geld(pro)} pro Trade" for pro, name, wert, d in gut] \

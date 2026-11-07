@@ -104,9 +104,11 @@ TRADER_SCHLIESSEN_UM = "20:55"      # Daytrading: offene Positionen vor Handelss
 TRADER_NEWS_SPERRE_MINUTEN = 30     # keine neuen Trades so viele Minuten vor/nach wichtigen News
 TRADER_PRUEF_SEKUNDEN = 60          # so oft schaut der Roboter auf die Märkte
 # Geschätzte Kosten pro Trade (Spread + Kommission) in Preis-Einheiten – bitte mit FTMO abgleichen
-TRADER_KOSTEN = {"XAUUSD": 0.35, "US100": 2.0, "EURUSD": 0.00012, "US30": 3.0, "BTCUSD": 30.0}
+TRADER_KOSTEN = {"XAUUSD": 0.35, "US100": 2.0, "EURUSD": 0.00012, "US30": 3.0, "BTCUSD": 30.0,
+                 "XAGUSD": 0.03, "GBPUSD": 0.00015, "US500": 0.6, "GER40": 2.0}
 # Kleinste handelbare Menge in Einheiten (Unzen Gold, Index-Punkte, Euro)
-TRADER_EINHEITEN_SCHRITT = {"XAUUSD": 1, "US100": 0.1, "EURUSD": 1000, "US30": 0.1, "BTCUSD": 0.01}
+TRADER_EINHEITEN_SCHRITT = {"XAUUSD": 1, "US100": 0.1, "EURUSD": 1000, "US30": 0.1, "BTCUSD": 0.01,
+                            "XAGUSD": 50, "GBPUSD": 1000, "US500": 0.1, "GER40": 0.1}
 
 # Standard-Risiko pro Trade in Prozent (für Positionsrechner und Setup-Vorschläge)
 RISIKO_STANDARD_PROZENT = 0.5

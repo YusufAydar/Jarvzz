@@ -4,6 +4,15 @@ Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub:
 Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
 die neuesten Einträge (sie stehen in seiner Grundanweisung).
 
+## 2026-11-07 · Langzeit-Test über 20 Jahre, 8 Märkte, 100 Top-Trader
+- `historie.h1_laden`: bis zu 20 Jahre Stundenkerzen von Dukascopy (eine Datei pro Monat, wird gespeichert).
+- Backtest kann jetzt auch auf H1 rechnen (Einstieg H1, Trend H4) und zeigt das Ergebnis **je Jahr** –
+  eine Strategie besteht den Langzeit-Test nur, wenn mindestens 60 % der Jahre im Plus sind.
+- Der große Backtest-Lauf testet 8 Märkte über 20 Jahre: Gold, Silber, EURUSD, GBPUSD, US30, US500, US100, DAX –
+  dazu weiterhin 2 Jahre Daytrading (M15) mit allen FTMO-Grenzen. Ergebnis mit Rangliste.
+- Kosten/Mengen für Silber (XAGUSD), GBPUSD, US500 und DAX (GER40) ergänzt.
+- Der tägliche Hyperliquid-Bericht wertet jetzt die **100** besten Trader aus (vorher 10) – die Muster werden belastbarer.
+
 ## 2026-11-07 · Telegram, manuelle Paper-Trades, Stop-Management, Muster der Top-Trader
 - **Telegram:** Mit `TELEGRAM_TOKEN` und `TELEGRAM_CHAT_ID` in `.env` schickt Jarvis alle Meldungen (Trades, News,
   Tagesbericht) aufs Handy. Der Boss kann vom Handy fragen oder `/status`, `/bericht`, `/pause`, `/weiter` schreiben.

@@ -168,3 +168,94 @@ def m15_laden(symbol, tage=730, ordner=None, fortschritt=None, max_fehler_anteil
     if not kerzen:
         raise ValueError(f"Dukascopy hat keine Daten für {symbol} geliefert.")
     return kerzen
+
+
+# ---------- Langzeit: 1-Stunden-Kerzen über viele Jahre ----------
+# Dukascopy hat pro MONAT eine Datei mit Stundenkerzen (Zeit = Sekunden seit Monatsbeginn, UTC):
+#   https://datafeed.dukascopy.com/datafeed/<SYMBOL>/<JAHR>/<MONAT-1>/BID_candles_hour_1.bi5
+# 20 Jahre = 240 Dateien pro Markt (statt 7300 Tagesdateien) – das geht in wenigen Minuten.
+URL_H1 = "https://datafeed.dukascopy.com/datafeed/{sym}/{jahr:04d}/{monat:02d}/BID_candles_hour_1.bi5"
+
+
+def _herunterladen(url):
+    anfrage = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    for versuch in range(5):
+        try:
+            with urllib.request.urlopen(anfrage, timeout=30) as antwort:
+                return antwort.read()
+        except urllib.error.HTTPError as fehler:
+            if fehler.code == 404:
+                return b""
+            if versuch == 4:
+                raise
+        except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
+            if versuch == 4:
+                raise
+        time.sleep(2 ** versuch)
+
+
+def _monat_laden(dukas_symbol, jahr, monat, bereich, ordner):
+    datei = ordner / dukas_symbol / "h1" / f"{jahr:04d}-{monat:02d}.csv"
+    if datei.exists():
+        return [dict(zip(("zeit", "open", "high", "low", "close"), (int(z.split(",")[0]),
+                     *map(float, z.split(",")[1:])))) for z in datei.read_text(encoding="utf-8").split()]
+    roh = _herunterladen(URL_H1.format(sym=dukas_symbol, jahr=jahr, monat=monat - 1))
+    start = int(datetime(jahr, monat, 1, tzinfo=timezone.utc).timestamp())
+    roh_kerzen = kerzen_aus_bi5(roh, start)
+    faktor = faktor_finden(roh_kerzen, bereich) if roh_kerzen else 1
+    if roh_kerzen and faktor is None:
+        raise ValueError(f"Preis-Faktor für {dukas_symbol} nicht erkennbar")
+    h1 = [{"zeit": k["zeit"], "open": k["open"] / faktor, "high": k["high"] / faktor,
+           "low": k["low"] / faktor, "close": k["close"] / faktor} for k in roh_kerzen]
+    heute = datetime.now(timezone.utc)
+    if (jahr, monat) < (heute.year, heute.month):  # abgeschlossene Monate dauerhaft speichern
+        datei.parent.mkdir(parents=True, exist_ok=True)
+        datei.write_text("\n".join(f"{k['zeit']},{k['open']},{k['high']},{k['low']},{k['close']}" for k in h1),
+                         encoding="utf-8")
+    return h1
+
+
+def h1_laden(symbol, jahre=20, ordner=None, fortschritt=None, info=None):
+    """
+    Lädt bis zu `jahre` Jahre 1-Stunden-Kerzen (ältester zuerst). Märkte, die es bei Dukascopy noch nicht
+    so lange gibt, beginnen einfach später – info["beginn"] sagt, ab wann es Daten gibt.
+    """
+    eintrag = SYMBOLE.get(symbol.upper().replace("/", "").replace(".CASH", ""))
+    if not eintrag:
+        raise ValueError(f"Für {symbol} gibt es keine Dukascopy-Historie.")
+    dukas_symbol, bereich = eintrag
+    ordner = Path(ordner or ORDNER)
+    heute = datetime.now(timezone.utc)
+    monate = []
+    j, m = heute.year - jahre, heute.month
+    while (j, m) <= (heute.year, heute.month):
+        monate.append((j, m))
+        j, m = (j + 1, 1) if m == 12 else (j, m + 1)
+    ergebnis, fehlgeschlagen = [None] * len(monate), []
+
+    def laden(i):
+        try:
+            ergebnis[i] = _monat_laden(dukas_symbol, *monate[i], bereich, ordner)
+        except Exception:
+            ergebnis[i] = []
+            fehlgeschlagen.append(monate[i])
+        if fortschritt:
+            fortschritt(sum(1 for x in ergebnis if x is not None), len(monate))
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        list(pool.map(laden, range(len(monate))))
+    for jm in sorted(fehlgeschlagen):   # zweiter Versuch, einzeln
+        try:
+            ergebnis[monate.index(jm)] = _monat_laden(dukas_symbol, *jm, bereich, ordner)
+            fehlgeschlagen.remove(jm)
+        except Exception:
+            time.sleep(1)
+    kerzen = [k for monat in ergebnis for k in monat]
+    if info is not None:
+        info["fehlend"] = len(fehlgeschlagen)
+        info["beginn"] = datetime.fromtimestamp(kerzen[0]["zeit"], timezone.utc).strftime("%m/%Y") if kerzen else None
+    if not kerzen:
+        raise ValueError(f"Dukascopy hat keine Stundenkerzen für {symbol} geliefert.")
+    if len(fehlgeschlagen) > len(monate) * 0.05:
+        raise ValueError(f"Dukascopy: {len(fehlgeschlagen)} von {len(monate)} Monaten nicht ladbar.")
+    return kerzen

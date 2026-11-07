@@ -95,5 +95,27 @@ class TestHistorie(unittest.TestCase):
             self.assertGreater(info["fehlend"], 10)
 
 
+    def test_stundenkerzen_ueber_monate(self):
+        geladen = []
+
+        def herunterladen(url):
+            geladen.append(url)
+            if "/2001/" in url:                      # Markt gab es damals noch nicht
+                return b""
+            return bi5([(h * 3600, 110000, 110050, 109900, 110100, 5.0) for h in range(48)])
+        with tempfile.TemporaryDirectory() as ordner, mock.patch.object(historie, "_herunterladen", herunterladen):
+            info = {}
+            k = historie.h1_laden("EURUSD", 25, ordner=ordner, info=info)
+            anzahl = len(geladen)
+            historie.h1_laden("EURUSD", 25, ordner=ordner)       # zweites Mal: abgeschlossene Monate aus dem Speicher
+        self.assertTrue(all("BID_candles_hour_1.bi5" in u for u in geladen))
+        self.assertIn("/00/", next(u for u in geladen if "/2002/" in u))   # Monat 0-basiert wie bei Dukascopy
+        self.assertAlmostEqual(k[0]["close"], 1.1005)
+        self.assertEqual(info["beginn"], "01/2002")
+        self.assertLessEqual(len(geladen) - anzahl, 2)          # nur der laufende Monat (evtl. Monatswechsel) neu
+        zeiten = [x["zeit"] for x in k]
+        self.assertEqual(zeiten, sorted(zeiten))
+
+
 if __name__ == "__main__":
     unittest.main()

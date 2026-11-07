@@ -104,15 +104,11 @@ python -m unittest discover tests -v
 
 ---
 
-## Von 10 auf 100 Trader umstellen
+## 100 Trader (eingestellt seit 07.11.2026)
 
-Fang mit 10 an. Wenn die Berichte gut aussehen:
-
-1. Öffne die Datei `.github/workflows/taeglicher-bericht.yml`.
-2. Ändere in beiden Zeilen mit `'10'` bzw. `"10"` die Zahl auf `100`.
-3. Speichern (auf GitHub: „Commit changes“). Fertig.
-
-Mit 100 Tradern dauert ein Lauf länger, beim ersten Mal etwa 10–20 Minuten.
+Der tägliche Lauf wertet jetzt die **100 besten Trader** aus (vorher 10). Zurück auf weniger: in
+`.github/workflows/taeglicher-bericht.yml` in beiden Zeilen `100` durch z. B. `10` ersetzen.
+Mit 100 Tradern dauert ein Lauf länger, beim ersten Mal bis zu einer Stunde.
 
 ---
 

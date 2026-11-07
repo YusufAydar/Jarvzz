@@ -74,6 +74,18 @@ def dukascopy():
     return f"EURUSD: {len(kerzen)} M15-Kerzen aus 7 Tagen, letzter Kurs {kerzen[-1]['close']:.5f}"
 
 
+def dukascopy_h1():
+    import tempfile
+    from trading import historie
+    with tempfile.TemporaryDirectory() as ordner:
+        info = {}
+        kerzen = historie.h1_laden("XAUUSD", 1, ordner=ordner, info=info)
+    assert len(kerzen) > 4000, f"nur {len(kerzen)} Stundenkerzen in einem Jahr"
+    assert 300 < kerzen[-1]["close"] < 20000, f"Goldpreis unplausibel: {kerzen[-1]['close']}"
+    return f"Gold: {len(kerzen)} H1-Kerzen aus 1 Jahr (ab {info['beginn']}), letzter Kurs {kerzen[-1]['close']:.2f}"
+
+
 pruefe("Dukascopy-Historie", dukascopy)
+pruefe("Dukascopy-Stundenkerzen (Langzeit)", dukascopy_h1)
 print(f"\n{fehler} Fehler")
 sys.exit(1 if fehler else 0)

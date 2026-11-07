@@ -190,3 +190,27 @@ class TestVarianten(unittest.TestCase):
         ny = next(x for x in e if "newyork" in x["strategie"])
         self.assertEqual(ny["statistik"]["trades"], 0)                    # London-Ausbrüche um 10:30 -> nicht im NY-Fenster
         self.assertIn("VARIANTEN XAUUSD", backtest.varianten_text(e, regeln()))
+
+
+class TestLangzeit(unittest.TestCase):
+    def test_h1_backtest_mit_jahren(self):
+        import math
+        import random
+        z = random.Random(3)
+        start = int(datetime(2023, 1, 2, tzinfo=WIEN).timestamp())
+        kerzen, p = [], 2000.0
+        for i in range(3 * 365 * 24):   # 3 Jahre Stundenkerzen, Wochenenden raus
+            zeit = start + i * 3600
+            if datetime.fromtimestamp(zeit, WIEN).weekday() >= 5:
+                continue
+            o = p
+            p += z.gauss(0, 3) + 0.8 * math.sin(i / 300)
+            kerzen.append({"zeit": zeit, "open": o, "close": p, "high": max(o, p) + 1, "low": min(o, p) - 1})
+        r = regeln()
+        r.max_drawdown_prozent = 100.0
+        e = backtest.backtest("XAUUSD", kerzen, r, 10000, zeitrahmen="H1")
+        self.assertEqual(e["zeitrahmen"], "H1")
+        self.assertGreaterEqual(len(e["jahre"]), 2, e["warte_gruende"])
+        text = backtest.text(e, r)
+        self.assertIn("(H1)", text)
+        self.assertIn("Je Jahr", text)
