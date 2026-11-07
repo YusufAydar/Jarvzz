@@ -4,6 +4,13 @@ Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub:
 Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
 die neuesten Einträge (sie stehen in seiner Grundanweisung).
 
+## 2026-11-07 · Erste 20-Jahres-Ergebnisse, Langzeit-Lauf macht weiter
+- Ergebnis 20 Jahre H1 (Gold, Silber, EURUSD, GBPUSD, US30): **keine** Strategie besteht. Trend-Pullback auf Gold
+  nur PF 1.04 und im letzten Drittel PF 0.31, Mean-Reversion überall klar im Minus (Drawdown über 50 %).
+  Bedeutet: die 2-Jahres-Ergebnisse (Gold PF 1.29) sind noch kein echter Vorteil – weiter nur Paper, nichts umstellen.
+- `historie.h1_laden(..., nur_gespeichert=True)`: nur schon gespeicherte Monate benutzen, nichts herunterladen.
+- Der Backtest-Lauf schreibt sein Ergebnis nach jedem Markt und holt noch nicht geladene Märkte beim nächsten Lauf nach.
+
 ## 2026-11-07 · Langzeit-Test über 20 Jahre, 8 Märkte, 100 Top-Trader
 - `historie.h1_laden`: bis zu 20 Jahre Stundenkerzen von Dukascopy (eine Datei pro Monat, wird gespeichert).
 - Backtest kann jetzt auch auf H1 rechnen (Einstieg H1, Trend H4) und zeigt das Ergebnis **je Jahr** –

@@ -11,7 +11,8 @@ Zwei Teile:
   B) DAYTRADING: 2 Jahre 15-Minuten-Kerzen mit allen FTMO-Grenzen, so wie der Roboter live handelt.
 
 Laden und Rechnen sind getrennt, damit schon geladene Daten auch dann gesichert werden, wenn der Download zu
-lange dauert (der nächste Lauf macht weiter). Beim Rechnen dürfen bis zu 20 % der Tage fehlen.
+lange dauert (der nächste Lauf macht weiter). Beim Rechnen dürfen bis zu 20 % der Tage fehlen;
+Langzeit-Märkte, die noch nicht komplett geladen sind, kommen beim nächsten Lauf dran.
 """
 
 import copy
@@ -52,8 +53,14 @@ def m15(markt, max_fehler_anteil, info=None, nur_gespeichert=False):
                               info=info, nur_gespeichert=nur_gespeichert)
 
 
-def h1(markt, info=None):
-    return historie.h1_laden(markt, JAHRE, fortschritt=zeit_anzeige(markt, "Monate"), info=info)
+def h1(markt, info=None, nur_gespeichert=False):
+    return historie.h1_laden(markt, JAHRE, fortschritt=zeit_anzeige(markt, "Monate"), info=info,
+                             nur_gespeichert=nur_gespeichert)
+
+
+def speichern():
+    # nach jedem Markt schreiben – so gibt es auch bei einem Zeit-Abbruch schon ein Ergebnis
+    Path("backtest_ergebnis.md").write_text("\n".join(texte), encoding="utf-8")
 
 
 if MODUS == "laden":
@@ -84,7 +91,7 @@ rangliste = []
 for markt in LANGZEIT_MAERKTE:
     try:
         info = {}
-        kerzen = h1(markt, info)
+        kerzen = h1(markt, info, nur_gespeichert=True)   # Rechnen lädt nichts nach (das macht „laden“)
         print(f"  {markt}: {len(kerzen)} H1-Kerzen ab {info.get('beginn')}, rechne ...", flush=True)
         ergebnisse = backtest.vergleich(markt, kerzen, regeln_roh, einstellungen.TRADER_KONTO_START,
                                         LANGZEIT_STRATEGIEN, zeitrahmen="H1")
@@ -98,9 +105,10 @@ for markt in LANGZEIT_MAERKTE:
                 + backtest.varianten_text(varianten, regeln_roh) + "\n\n"
                 + "\n\n".join(backtest.text(e, regeln_roh) for e in ergebnisse))
     except Exception as fehler:
-        text = f"{markt}: FEHLER {fehler}"
+        text = f"{markt}: noch nicht komplett geladen ({fehler}) – kommt beim nächsten Lauf"
     print(text, flush=True)
     texte.append("```\n" + text + "\n```\n")
+    speichern()
 
 if rangliste:
     rangliste.sort(key=lambda x: (x[0], x[1]), reverse=True)
@@ -132,5 +140,6 @@ for markt in MAERKTE:
         text = f"{markt}: FEHLER {fehler}"
     print(text, flush=True)
     texte.append("```\n" + text + "\n```\n")
+    speichern()
 texte.append("> Vergangene Ergebnisse garantieren nichts. GER40 wird in Euro gehandelt – im Test wie Dollar gerechnet.")
-Path("backtest_ergebnis.md").write_text("\n".join(texte), encoding="utf-8")
+speichern()

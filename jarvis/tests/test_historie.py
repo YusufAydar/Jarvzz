@@ -70,6 +70,20 @@ class TestHistorie(unittest.TestCase):
             k = historie.m15_laden("EURUSD", 14)
         zeiten = [x["zeit"] for x in k]
         self.assertEqual(zeiten, sorted(zeiten))
+
+    def test_stundenkerzen_nur_gespeichert(self):
+        def herunterladen(url):
+            return bi5([(h * 3600, 110000, 110050, 109900, 110100, 5.0) for h in range(48)])
+        with tempfile.TemporaryDirectory() as ordner:
+            with self.assertRaises(ValueError):               # noch nichts gespeichert -> nicht rechnen
+                historie.h1_laden("EURUSD", 3, ordner=ordner, nur_gespeichert=True)
+            with mock.patch.object(historie, "_herunterladen", herunterladen):
+                voll = historie.h1_laden("EURUSD", 3, ordner=ordner)
+            with mock.patch.object(historie, "_herunterladen", side_effect=AssertionError("kein Download!")):
+                info = {}
+                k = historie.h1_laden("EURUSD", 3, ordner=ordner, nur_gespeichert=True, info=info)
+        self.assertEqual(info["fehlend"], 0)
+        self.assertEqual(len(voll) - len(k), 48)               # nur der laufende Monat fehlt
         self.assertEqual(len(k), 12)   # 14 Tage ohne 2 Samstage
 
     def test_zweiter_versuch_und_fehlertoleranz(self):
@@ -115,6 +129,20 @@ class TestHistorie(unittest.TestCase):
         self.assertLessEqual(len(geladen) - anzahl, 2)          # nur der laufende Monat (evtl. Monatswechsel) neu
         zeiten = [x["zeit"] for x in k]
         self.assertEqual(zeiten, sorted(zeiten))
+
+    def test_stundenkerzen_nur_gespeichert(self):
+        def herunterladen(url):
+            return bi5([(h * 3600, 110000, 110050, 109900, 110100, 5.0) for h in range(48)])
+        with tempfile.TemporaryDirectory() as ordner:
+            with self.assertRaises(ValueError):               # noch nichts gespeichert -> nicht rechnen
+                historie.h1_laden("EURUSD", 3, ordner=ordner, nur_gespeichert=True)
+            with mock.patch.object(historie, "_herunterladen", herunterladen):
+                voll = historie.h1_laden("EURUSD", 3, ordner=ordner)
+            with mock.patch.object(historie, "_herunterladen", side_effect=AssertionError("kein Download!")):
+                info = {}
+                k = historie.h1_laden("EURUSD", 3, ordner=ordner, nur_gespeichert=True, info=info)
+        self.assertEqual(info["fehlend"], 0)
+        self.assertEqual(len(voll) - len(k), 48)               # nur der laufende Monat fehlt
 
 
 if __name__ == "__main__":

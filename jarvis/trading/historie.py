@@ -194,11 +194,16 @@ def _herunterladen(url):
         time.sleep(2 ** versuch)
 
 
-def _monat_laden(dukas_symbol, jahr, monat, bereich, ordner):
+def _monat_laden(dukas_symbol, jahr, monat, bereich, ordner, nur_gespeichert=False):
     datei = ordner / dukas_symbol / "h1" / f"{jahr:04d}-{monat:02d}.csv"
     if datei.exists():
         return [dict(zip(("zeit", "open", "high", "low", "close"), (int(z.split(",")[0]),
                      *map(float, z.split(",")[1:])))) for z in datei.read_text(encoding="utf-8").split()]
+    if nur_gespeichert:
+        heute = datetime.now(timezone.utc)
+        if (jahr, monat) >= (heute.year, heute.month):
+            return []   # laufender Monat wird nie gespeichert – ohne Download einfach weglassen
+        raise FileNotFoundError(f"{dukas_symbol} {jahr}-{monat:02d} noch nicht geladen")
     roh = _herunterladen(URL_H1.format(sym=dukas_symbol, jahr=jahr, monat=monat - 1))
     start = int(datetime(jahr, monat, 1, tzinfo=timezone.utc).timestamp())
     roh_kerzen = kerzen_aus_bi5(roh, start)
@@ -215,10 +220,11 @@ def _monat_laden(dukas_symbol, jahr, monat, bereich, ordner):
     return h1
 
 
-def h1_laden(symbol, jahre=20, ordner=None, fortschritt=None, info=None):
+def h1_laden(symbol, jahre=20, ordner=None, fortschritt=None, info=None, nur_gespeichert=False):
     """
     Lädt bis zu `jahre` Jahre 1-Stunden-Kerzen (ältester zuerst). Märkte, die es bei Dukascopy noch nicht
     so lange gibt, beginnen einfach später – info["beginn"] sagt, ab wann es Daten gibt.
+    nur_gespeichert=True: nichts herunterladen, nur die schon gespeicherten Monate benutzen.
     """
     eintrag = SYMBOLE.get(symbol.upper().replace("/", "").replace(".CASH", ""))
     if not eintrag:
@@ -235,7 +241,7 @@ def h1_laden(symbol, jahre=20, ordner=None, fortschritt=None, info=None):
 
     def laden(i):
         try:
-            ergebnis[i] = _monat_laden(dukas_symbol, *monate[i], bereich, ordner)
+            ergebnis[i] = _monat_laden(dukas_symbol, *monate[i], bereich, ordner, nur_gespeichert)
         except Exception:
             ergebnis[i] = []
             fehlgeschlagen.append(monate[i])
@@ -244,7 +250,7 @@ def h1_laden(symbol, jahre=20, ordner=None, fortschritt=None, info=None):
 
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(laden, range(len(monate))))
-    for jm in sorted(fehlgeschlagen):   # zweiter Versuch, einzeln
+    for jm in ([] if nur_gespeichert else sorted(fehlgeschlagen)):   # zweiter Versuch, einzeln
         try:
             ergebnis[monate.index(jm)] = _monat_laden(dukas_symbol, *jm, bereich, ordner)
             fehlgeschlagen.remove(jm)
