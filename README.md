@@ -46,6 +46,7 @@ Den neuesten Bericht findest du immer unter **[`berichte/aktuell.md`](berichte/a
 | `datenbank.py` | **Speichern.** Legt die SQLite-Datenbank an und schreibt die Daten hinein bzw. liest sie wieder aus. |
 | `analyse.py` | **Rechnen.** Baut aus den einzelnen Käufen/Verkäufen echte Trades und berechnet alle Kennzahlen und die Einigkeit. |
 | `bericht.py` | **Bericht.** Macht aus den Ergebnissen eine schön lesbare Markdown-Datei mit Tabellen. |
+| `muster.py` | **Muster der Top-Trader.** Wertet aus, *wie* die Top-Trader handeln (mit/gegen Trend, Pullback/Ausbruch, Uhrzeit, Haltedauer) und was davon Geld bringt → `berichte/muster.md`. Ideen für eigene Regeln, kein Kopieren. |
 | `tests/test_projekt.py` | **Automatische Tests.** Prüfen mit ausgedachten Beispiel-Trades, ob die Rechnungen stimmen (ohne Internet). |
 | `.github/workflows/taeglicher-bericht.yml` | **Tägliche Automatik.** Sagt GitHub: „Führe das Programm jeden Tag um 06:17 UTC aus und speichere den Bericht.“ |
 | `.github/workflows/tests.yml` | **Prüfung bei Änderungen.** Bei jeder Code-Änderung laufen die Tests und ein Probelauf mit 10 echten Tradern. |

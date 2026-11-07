@@ -84,6 +84,16 @@ Er läuft in der Zentrale mit und beobachtet **Gold, US100 und EURUSD**. Bei jed
 - **Sprachbefehle:** „Jarvis, wie läuft der Roboter?“, „Warum hast du nicht gekauft?“, „Starte einen Backtest“, „Pausiere den Roboter“.
 - **Der Weg zu echtem Geld (Stufe 2/3):** Erst wenn der Backtest **bestanden** ist **und** im Paper-Trading mindestens 100 Trades mit Profit-Faktor ≥ 1,3 vorliegen. Freischalten tut ihr, nicht der Roboter.
 
+### 📱 Jarvis aufs Handy (Telegram)
+
+Jarvis schickt dir Trades, News-Warnungen und den Tagesbericht aufs Handy. Du kannst ihm auch schreiben.
+1. In Telegram **@BotFather** öffnen → `/newbot` → Namen vergeben → du bekommst einen Schlüssel.
+2. In `jarvis/.env` eintragen: `TELEGRAM_TOKEN=dein-schlüssel` → Jarvis neu starten.
+3. Deinem neuen Bot `/start` schreiben → er antwortet mit deiner Chat-ID → in `.env`: `TELEGRAM_CHAT_ID=die-zahl` → Jarvis neu starten.
+- Befehle: `/status`, `/bericht`, `/pause`, `/weiter`, `/hilfe` – oder einfach eine Frage schreiben.
+- Jarvis antwortet **nur deiner Chat-ID**. Freigaben (riskante Aktionen) gibt es weiterhin **nur am PC**.
+- Der PC muss an sein und die Trading-Zentrale laufen.
+
 ### 🔗 Verbindung zwischen Jarvis und Claude
 
 - **Jarvis → Claude:** Wenn Jarvis sich selbst verändert (ein Werkzeug baut oder Dateien umbaut), meldet er es mit „an Claude melden“. Seine Änderungen landen mit Bericht im GitHub-Zweig `jarvis-pc`, und Claude liest sie vor jeder Änderung.

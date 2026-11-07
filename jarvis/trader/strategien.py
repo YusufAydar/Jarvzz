@@ -143,3 +143,50 @@ def bewerten(name_strategie, kerzen, kerzen_h1, symbol, stellen=5, kosten=0.0):
     if signal.get("setup") and name_strategie in MIN_CRV:
         signal["setup"]["min_crv"] = MIN_CRV[name_strategie]
     return signal
+
+
+# ---------- Varianten: gleiche Einstiege, anderes Trade-Management bzw. andere Uhrzeiten ----------
+# management: breakeven_r = Stop auf Einstand ab X R im Plus; trail_r/trail_start_r = Stop im Abstand
+#             trail_r * R nachziehen, sobald der Trade trail_start_r im Plus war
+# ziel_r:     Ziel neu setzen auf X * Risiko (None = Ziel der Strategie)
+# zeitfenster: nur in diesem Zeitfenster (österreichische Zeit) NEUE Trades eröffnen
+VARIANTEN = {
+    "basis": {},
+    "breakeven": {"management": {"breakeven_r": 1.0}},
+    "trailing": {"management": {"breakeven_r": 1.0, "trail_start_r": 1.5, "trail_r": 1.0}, "ziel_r": 4.0},
+    "london": {"zeitfenster": ("09:00", "13:00")},
+    "newyork": {"zeitfenster": ("14:00", "21:00")},
+    "london_breakeven": {"zeitfenster": ("09:00", "13:00"), "management": {"breakeven_r": 1.0}},
+    "newyork_breakeven": {"zeitfenster": ("14:00", "21:00"), "management": {"breakeven_r": 1.0}},
+    "london_trailing": {"zeitfenster": ("09:00", "13:00"), "ziel_r": 4.0,
+                        "management": {"breakeven_r": 1.0, "trail_start_r": 1.5, "trail_r": 1.0}},
+    "newyork_trailing": {"zeitfenster": ("14:00", "21:00"), "ziel_r": 4.0,
+                         "management": {"breakeven_r": 1.0, "trail_start_r": 1.5, "trail_r": 1.0}},
+}
+
+
+def im_zeitfenster(variante, zeitstempel):
+    fenster = (VARIANTEN.get(variante) or {}).get("zeitfenster") if isinstance(variante, str) else \
+        (variante or {}).get("zeitfenster")
+    if not fenster:
+        return True
+    hm = risiko.wien_zeit(zeitstempel).strftime("%H:%M")
+    return fenster[0] <= hm < fenster[1]
+
+
+def variante_anwenden(signal, variante):
+    """Passt Ziel und Stop-Management eines Signals an die Variante an (Einstieg und Stop bleiben gleich)."""
+    v = VARIANTEN.get(variante, {}) if isinstance(variante, str) else (variante or {})
+    s = signal.get("setup")
+    if not s or not v:
+        return signal
+    s = dict(s)
+    if v.get("ziel_r"):
+        r = abs(s["einstieg"] - s["stop"])
+        s["ziel"] = s["einstieg"] + v["ziel_r"] * r if s["richtung"] == "LONG" else s["einstieg"] - v["ziel_r"] * r
+        chance = abs(s["ziel"] - s["einstieg"])
+        s["crv"] = chance / r if r else 0
+        s["crv_netto"] = (chance - s["kosten"]) / (r + s["kosten"]) if r + s["kosten"] > 0 else 0
+    if v.get("management"):
+        s["management"] = dict(v["management"])
+    return dict(signal, setup=s)

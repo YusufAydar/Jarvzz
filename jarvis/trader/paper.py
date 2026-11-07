@@ -5,6 +5,8 @@ Paper-Konto: handelt mit VIRTUELLEM Geld zu echten Kursen. Hier wird nie eine ec
 - Kosten (Spread + Kommission) werden bei jedem Trade abgezogen
 - Stop-Loss und Take-Profit werden mit Hoch/Tief jeder Kerze geprüft. Werden in EINER Kerze
   beide berührt, zählt der Stop-Loss (vorsichtige Annahme)
+- Stop-Management (optional je Trade): Stop auf Einstand ziehen, sobald der Trade X R im Plus war,
+  und/oder Stop nachziehen (Trailing). Der neue Stop gilt erst ab der NÄCHSTEN Kerze (vorsichtig).
 - Jeder Trade wird vollständig dokumentiert (Zeit, Kurse, Größe, Strategie, Begründung, Score, Ergebnis)
 """
 
@@ -75,6 +77,8 @@ class PaperKonto:
                  "einheiten": einheiten, "kosten": s.get("kosten", 0.0), "eroeffnet": zeitstempel,
                  "confidence": signal["confidence"], "teile": signal.get("teile", {}),
                  "begruendung": signal.get("gruende", []), "strategie": signal.get("strategie", "Trend-Pullback"),
+                 "stop_start": s["stop"], "management": s.get("management") or {},
+                 "manuell": bool(signal.get("manuell")),
                  "risiko_betrag": (abs((preis or s["einstieg"]) - s["stop"]) + s.get("kosten", 0.0)) * einheiten}
             self.zustand["naechste_id"] += 1
             self.zustand["offene"].append(p)
@@ -108,10 +112,41 @@ class PaperKonto:
             stop_getroffen = kerze["low"] <= p["stop"] if long else kerze["high"] >= p["stop"]
             ziel_getroffen = kerze["high"] >= p["ziel"] if long else kerze["low"] <= p["ziel"]
             if stop_getroffen:  # bei beiden in einer Kerze: Stop zählt (vorsichtig)
-                geschlossen.append(self.schliessen(p["id"], p["stop"], kerze["zeit"], "Stop-Loss"))
+                geschlossen.append(self.schliessen(p["id"], p["stop"], kerze["zeit"], self._stop_name(p)))
             elif ziel_getroffen:
                 geschlossen.append(self.schliessen(p["id"], p["ziel"], kerze["zeit"], "Take-Profit"))
+            else:
+                self._stop_nachziehen(p, kerze["high"], kerze["low"])
         return [t for t in geschlossen if t]
+
+    @staticmethod
+    def _stop_name(p):
+        if p["stop"] == p.get("stop_start", p["stop"]):
+            return "Stop-Loss"
+        gesichert = (p["stop"] >= p["einstieg"]) if p["richtung"] == "LONG" else (p["stop"] <= p["einstieg"])
+        return "Nachgezogener Stop (im Plus/Einstand)" if gesichert else "Nachgezogener Stop"
+
+    def _stop_nachziehen(self, p, hoch, tief):
+        """Break-even und Trailing-Stop. Der Stop wird nur in Gewinnrichtung bewegt, nie zurück."""
+        m = p.get("management") or {}
+        r = abs(p["einstieg"] - p.get("stop_start", p["stop"]))
+        if not m or not r:
+            return
+        long = p["richtung"] == "LONG"
+        bester = hoch if long else tief
+        im_plus_r = ((bester - p["einstieg"]) if long else (p["einstieg"] - bester)) / r
+        kandidaten = []
+        if m.get("breakeven_r") and im_plus_r >= m["breakeven_r"]:
+            kandidaten.append(p["einstieg"] + p["kosten"] if long else p["einstieg"] - p["kosten"])
+        if m.get("trail_r") and im_plus_r >= m.get("trail_start_r", 0):
+            kandidaten.append(bester - m["trail_r"] * r if long else bester + m["trail_r"] * r)
+        if not kandidaten:
+            return
+        neuer = max(kandidaten) if long else min(kandidaten)
+        if (neuer > p["stop"]) if long else (neuer < p["stop"]):
+            with self._sperre:
+                p["stop"] = neuer
+                self._speichern()
 
     def preis_pruefen(self, symbol, preis, zeitstempel):
         """Live: aktueller Kurs jenseits von Stop-Loss/Take-Profit? Dann zu diesem Kurs schließen."""
@@ -119,9 +154,11 @@ class PaperKonto:
         for p in [x for x in self.zustand["offene"] if x["symbol"] == symbol]:
             long = p["richtung"] == "LONG"
             if (preis <= p["stop"]) if long else (preis >= p["stop"]):
-                geschlossen.append(self.schliessen(p["id"], preis, zeitstempel, "Stop-Loss"))
+                geschlossen.append(self.schliessen(p["id"], preis, zeitstempel, self._stop_name(p)))
             elif (preis >= p["ziel"]) if long else (preis <= p["ziel"]):
                 geschlossen.append(self.schliessen(p["id"], preis, zeitstempel, "Take-Profit"))
+            else:
+                self._stop_nachziehen(p, preis, preis)
         return [t for t in geschlossen if t]
 
     def alle_schliessen(self, preise, zeitstempel, grund):

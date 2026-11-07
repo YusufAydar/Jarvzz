@@ -81,7 +81,7 @@ def pruefen(signal, symbol, zeitstempel, konto, regeln, news=None):
     for gruppe in KORRELATIONS_GRUPPEN:
         if symbol in gruppe and any(p["symbol"] in gruppe and p["richtung"] == richtung for p in offene):
             gruende.append("ähnlicher Markt schon in dieselbe Richtung offen (Korrelation)")
-    if signal["confidence"] < regeln.min_confidence:
+    if not signal.get("manuell") and signal["confidence"] < regeln.min_confidence:  # manuell: Boss entscheidet
         gruende.append(f"Confidence {signal['confidence']} unter {regeln.min_confidence}")
     # Eine Strategie darf eine eigene CRV-Grenze haben, aber nie unter 1,0
     min_crv = max(1.0, signal["setup"].get("min_crv", regeln.min_crv))

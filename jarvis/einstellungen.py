@@ -84,7 +84,8 @@ SICHERHEIT_TAGESVERLUST = 3
 # Stufe 2 und 3 (echtes Geld) gibt es erst nach bestandenem Backtest + Paper-Trading und eurer Freigabe.
 TRADER_AKTIV = True                 # läuft in der Trading-Zentrale mit
 TRADER_STUFE = 1                    # 0 oder 1 – höhere Stufen sind noch gesperrt
-TRADER_MAERKTE = ["XAUUSD", "US100", "EURUSD"]
+# US100 vorerst raus: im 2-Jahres-Test haben dort alle vier Strategien verloren (Stand 07.11.2026)
+TRADER_MAERKTE = ["XAUUSD", "EURUSD"]
 TRADER_KONTO_START = 10000          # simuliertes Konto in USD (FTMO-Größe)
 TRADER_RISIKO_PROZENT = 1.0         # Verlust pro Trade, wenn der Stop-Loss getroffen wird
 TRADER_TAGESSTOPP_PROZENT = 2.0     # ab diesem Tagesverlust: heute keine neuen Trades
@@ -96,6 +97,8 @@ TRADER_MIN_CRV = 1.5                # Chance/Risiko NACH Kosten
 # Welche Strategie je Markt? Möglich: pullback, orb_london, orb_newyork, mean_reversion
 # Erst umstellen, wenn der 2-Jahres-Vergleich (Workflow "Roboter-Backtest") eine Strategie als BESTANDEN zeigt.
 TRADER_STRATEGIE = {"XAUUSD": "pullback", "US100": "pullback", "EURUSD": "pullback"}
+# Variante je Markt (Stop-Management/Uhrzeit), siehe trader/strategien.py VARIANTEN. "basis" = unverändert.
+TRADER_VARIANTE = {"XAUUSD": "basis", "EURUSD": "basis"}
 TRADER_HANDELSZEIT = ("09:00", "21:00")   # österreichische Zeit, Montag bis Freitag
 TRADER_SCHLIESSEN_UM = "20:55"      # Daytrading: offene Positionen vor Handelsschluss schließen
 TRADER_NEWS_SPERRE_MINUTEN = 30     # keine neuen Trades so viele Minuten vor/nach wichtigen News
@@ -109,6 +112,8 @@ TRADER_EINHEITEN_SCHRITT = {"XAUUSD": 1, "US100": 0.1, "EURUSD": 1000, "US30": 0
 RISIKO_STANDARD_PROZENT = 0.5
 # News-Wächter: so viele Minuten vor wichtigen News warnt Jarvis (0 = aus) ...
 NEWS_WARNUNG_MINUTEN = 15
+# Telegram (Schlüssel TELEGRAM_TOKEN und TELEGRAM_CHAT_ID stehen in .env): Meldungen auch aufs Handy schicken?
+TELEGRAM_MELDUNGEN = True
 # ... aber nur für diese Währungen (die deine Märkte bewegen)
 NEWS_WAEHRUNGEN = ["USD", "EUR", "GBP"]
 # Daytrading: um diese Uhrzeit erinnert Jarvis dich an offene Positionen ("" = aus)

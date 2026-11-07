@@ -36,9 +36,11 @@ def stellen_schaetzen(preis):
     return 2 if preis >= 100 else 3 if preis >= 10 else 5
 
 
-def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300, strategie_name="pullback"):
+def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300, strategie_name="pullback",
+             variante="basis"):
     """kerzen: M15-Kerzen (ältester zuerst). Gibt ein dict mit Trades, Statistik und Auswertungen zurück.
-    strategie_name: eine aus trader.strategien.STRATEGIEN (Standard: Trend-Pullback)."""
+    strategie_name: eine aus trader.strategien.STRATEGIEN (Standard: Trend-Pullback).
+    variante: eine aus trader.strategien.VARIANTEN (Trade-Management/Uhrzeit), Standard "basis"."""
     if len(kerzen) < fenster + 50:
         raise ValueError(f"Zu wenig Kursdaten für einen Backtest ({len(kerzen)} Kerzen).")
     h1 = [dict(k, ende=k["zeit"] + 3600) for k in kerzen_h1] if kerzen_h1 else h1_aus_m15(kerzen)
@@ -58,13 +60,15 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300,
             t = risiko.wien_zeit(ende)
             if t.weekday() >= 5 or t.strftime("%H:%M") >= regeln.schliessen_um:
                 konto.alle_schliessen({symbol: k["close"]}, ende, "Tagesende")
-        if not risiko.in_handelszeit(ende, regeln) or konto.zustand["offene"]:
+        if not risiko.in_handelszeit(ende, regeln) or konto.zustand["offene"] \
+                or not strategien.im_zeitfenster(variante, ende):
             continue
         h1_bis = bisect.bisect_right(h1_enden, ende)
         if h1_bis < 60:
             continue
         signal = strategien.bewerten(strategie_name, kerzen[i - fenster + 1:i + 1],
                                      h1[max(0, h1_bis - 250):h1_bis], symbol, stellen, kosten)
+        signal = strategien.variante_anwenden(signal, variante)
         if signal["aktion"] == "WAIT":
             grund = (signal["gruende"] or ["?"])[0].split(" – ")[0].split(",")[0]
             warte_gruende[grund] = warte_gruende.get(grund, 0) + 1
@@ -92,7 +96,8 @@ def backtest(symbol, kerzen, regeln, start=10000.0, kerzen_h1=None, fenster=300,
     letzte = kerzen[-1]
     konto.alle_schliessen({symbol: letzte["close"]}, letzte["zeit"] + 900, "Ende des Backtests")
     trades = konto.zustand["trades"]
-    return {"symbol": symbol, "strategie": strategien.NAMEN[strategie_name], "von": kerzen[fenster]["zeit"], "bis": letzte["zeit"], "kerzen": len(kerzen),
+    return {"symbol": symbol, "strategie": strategien.NAMEN[strategie_name] + ("" if variante == "basis" else f" [{variante}]"),
+            "von": kerzen[fenster]["zeit"], "bis": letzte["zeit"], "kerzen": len(kerzen),
             "start": start, "ende_balance": konto.zustand["balance"], "signale": signale, "trades": trades,
             "statistik": paper.statistik(trades, start), "kalibrierung": kalibrierung(trades),
             "stabilitaet": stabilitaet(trades, start), "monte_carlo": monte_carlo(trades, start),
@@ -235,4 +240,29 @@ def vergleich_text(ergebnisse, regeln):
                       f"PF {f(s['profit_faktor']):>5}, Ø {f(s['schnitt_r']):>5} R, Netto {s['netto']:+9.2f} $, "
                       f"DD {s['max_drawdown_prozent']:4.1f} %, spätes Drittel PF "
                       f"{f(st['spaet']['profit_faktor']) if st else '–'} -> {status}")
+    return "\n".join(zeilen)
+
+
+def varianten_vergleich(symbol, kerzen, regeln, start=10000.0, strategie_name="pullback", namen=None, fenster=300):
+    """Testet eine Strategie mit allen Varianten (Trade-Management/Uhrzeit) auf denselben Kursdaten.
+    Gegen Selbstbetrug: Gewählt wird nach den ERSTEN zwei Dritteln, das letzte Drittel ist die
+    Kontrolle („unbekannte“ Daten). Nur wenn es dort auch passt, taugt die Variante."""
+    ergebnisse = [backtest(symbol, kerzen, regeln, start, fenster=fenster, strategie_name=strategie_name, variante=n)
+                  for n in (namen or strategien.VARIANTEN)]
+
+    def frueh_pf(e):
+        st = e["stabilitaet"]
+        return (st["frueh"]["profit_faktor"] or 0) if st else 0
+    return sorted(ergebnisse, key=frueh_pf, reverse=True)
+
+
+def varianten_text(ergebnisse, regeln):
+    f = lambda x, n=2: "–" if x is None else ("∞" if x == float("inf") else f"{x:.{n}f}")
+    zeilen = [f"VARIANTEN {ergebnisse[0]['symbol']} (sortiert nach den ersten 2/3, letztes 1/3 = Kontrolle):"]
+    for e in ergebnisse:
+        s, st = e["statistik"], e["stabilitaet"]
+        zeilen.append(f"  {e['strategie']:<36} {s['trades']:>4} Trades, PF {f(s['profit_faktor']):>5}, "
+                      f"Netto {s['netto']:+9.2f} $, DD {s['max_drawdown_prozent']:4.1f} %, "
+                      f"PF früh {f(st['frueh']['profit_faktor']) if st else '–':>5} / Kontrolle "
+                      f"{f(st['spaet']['profit_faktor']) if st else '–':>5} -> {urteil(e, regeln)[0]}")
     return "\n".join(zeilen)

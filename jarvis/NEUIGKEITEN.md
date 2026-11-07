@@ -4,6 +4,21 @@ Neueste Einträge stehen oben. Jarvis vergleicht diese Datei mit der auf GitHub:
 Eintrag, den es hier noch nicht gibt, meldet er „Update verfügbar“. Nach dem Update kennt Jarvis
 die neuesten Einträge (sie stehen in seiner Grundanweisung).
 
+## 2026-11-07 · Telegram, manuelle Paper-Trades, Stop-Management, Muster der Top-Trader
+- **Telegram:** Mit `TELEGRAM_TOKEN` und `TELEGRAM_CHAT_ID` in `.env` schickt Jarvis alle Meldungen (Trades, News,
+  Tagesbericht) aufs Handy. Der Boss kann vom Handy fragen oder `/status`, `/bericht`, `/pause`, `/weiter` schreiben.
+  Nur seine Chat-ID wird angenommen; Freigaben gibt es weiterhin nur am PC. Anleitung im README.
+- **Manuelle Paper-Trades** (Wunsch von Jarvis/Boss): Werkzeuge `paper_trade_eroeffnen` und `paper_trade_schliessen`.
+  Nur Spielgeld, gleiche Risiko-Grenzen wie der Roboter, als „manuell“ markiert und getrennt von der Roboter-Statistik.
+- **Stop-Management:** Trades können den Stop auf Einstand ziehen (Break-even) oder nachziehen (Trailing).
+  Einstellbar je Markt mit `TRADER_VARIANTE` (Varianten: basis, breakeven, trailing, london, newyork, …).
+  Der 2-Jahres-Backtest testet alle Varianten auf Gold und EURUSD – gewählt wird nach den ersten 2/3 der Daten,
+  das letzte Drittel ist die Kontrolle.
+- **US100** ist vorerst aus den Roboter-Märkten genommen (im 2-Jahres-Test haben dort alle Strategien verloren).
+- **Muster der Top-Trader:** `hyperliquid_bericht` mit `art="muster"` zeigt, wie die besten Hyperliquid-Trader
+  handeln (mit/gegen Trend, Pullback/Ausbruch, Uhrzeit, Haltedauer) und was davon Geld bringt. Das sind Ideen für
+  eigene Regeln – es wird nichts kopiert.
+
 ## 2026-11-06 · Kurs-Download für Backtests robuster
 - Dukascopy-Tage, die beim ersten Mal nicht laden, werden am Ende einzeln noch einmal versucht.
 - `historie.m15_laden` kann jetzt auch nur mit bereits gespeicherten Tagen arbeiten (ohne Download).

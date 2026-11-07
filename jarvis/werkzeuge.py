@@ -80,8 +80,11 @@ WERKZEUG_BESCHREIBUNGEN = [
         "description": "Liefert den neuesten Tagesbericht über die Top-Trader auf Hyperliquid: "
                        "was sie in den letzten 24 Stunden gekauft/verkauft haben, wo sie sich einig sind, "
                        "offene Long/Short-Positionen und Statistiken (Gewinnrate, Hebel usw.). "
-                       "Benutze das für alle Fragen zu Hyperliquid, Top-Tradern oder was 'die Profis' machen.",
-        "input_schema": {"type": "object", "properties": {}},
+                       "Benutze das für alle Fragen zu Hyperliquid, Top-Tradern oder was 'die Profis' machen. "
+                       "Mit art='muster': WIE die Top-Trader handeln (mit/gegen Trend, Pullback/Ausbruch, Uhrzeit, "
+                       "Haltedauer) und was davon Geld bringt – Ideen für eigene Regeln, KEIN Kopieren.",
+        "input_schema": {"type": "object", "properties": {
+            "art": {"type": "string", "enum": ["tagesbericht", "muster"], "description": "Standard: tagesbericht"}}},
     },
     {
         "name": "markt_analyse",
@@ -248,6 +251,26 @@ WERKZEUG_BESCHREIBUNGEN = [
             "properties": {"aktion": {"type": "string", "enum": ["pause", "fortsetzen", "notaus", "zuruecksetzen"]}},
             "required": ["aktion"],
         },
+    },
+    {
+        "name": "paper_trade_eroeffnen",
+        "description": "Eröffnet einen MANUELLEN Paper-Trade (nur Spielgeld, nie eine echte Order) zum aktuellen Kurs, "
+                       "wenn der Boss selbst einen Trade testen will. Es gelten dieselben Risiko-Grenzen wie für den "
+                       "Roboter (Tagesstopp, Drawdown, News-Sperre, CRV mind. 1, Risiko höchstens wie eingestellt). "
+                       "Manuelle Trades werden getrennt von der Roboter-Statistik ausgewertet.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"symbol": {"type": "string"}, "richtung": {"type": "string", "enum": ["LONG", "SHORT"]},
+                           "stop": {"type": "number"}, "ziel": {"type": "number"},
+                           "risiko_prozent": {"type": "number", "description": "optional, höchstens TRADER_RISIKO_PROZENT"},
+                           "begruendung": {"type": "string"}},
+            "required": ["symbol", "richtung", "stop", "ziel"],
+        },
+    },
+    {
+        "name": "paper_trade_schliessen",
+        "description": "Schließt eine offene Paper-Position (Nummer aus trader_status) zum aktuellen Kurs.",
+        "input_schema": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]},
     },
     {
         "name": "backtest_starten",
@@ -478,15 +501,17 @@ class Werkzeugkasten:
 
     # ---------- Hyperliquid ----------
 
-    def _hyperliquid_bericht(self):
-        lokal = Path(einstellungen.HYPERLIQUID_BERICHT_LOKAL)
+    def _hyperliquid_bericht(self, art="tagesbericht"):
+        datei = "muster.md" if art == "muster" else "aktuell.md"
+        lokal = Path(einstellungen.HYPERLIQUID_BERICHT_LOKAL).with_name(datei)
         # Ein lokaler Bericht, der jünger als 26 Stunden ist, wird bevorzugt
         if lokal.exists() and time.time() - lokal.stat().st_mtime < 26 * 3600:
             text, quelle = lokal.read_text(encoding="utf-8"), "lokaler Bericht"
         else:
-            url, kopf = einstellungen.HYPERLIQUID_BERICHT_URL, {"User-Agent": "jarvis"}
+            url = einstellungen.HYPERLIQUID_BERICHT_URL.replace("aktuell.md", datei)
+            kopf = {"User-Agent": "jarvis"}
             if os.environ.get("GITHUB_TOKEN"):  # privates Repository
-                url = "https://api.github.com/repos/YusufAydar/Jarvzz/contents/berichte/aktuell.md?ref=main"
+                url = f"https://api.github.com/repos/YusufAydar/Jarvzz/contents/berichte/{datei}?ref=main"
                 kopf.update({"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
                              "Accept": "application/vnd.github.raw"})
             try:
@@ -637,6 +662,16 @@ class Werkzeugkasten:
                 "Zurücksetzen: das Paper-Konto startet neu (alle Paper-Ergebnisse werden gelöscht)."):
             return "Nicht freigegeben."
         return self.trader.steuern(aktion)
+
+    def _paper_trade_eroeffnen(self, symbol, richtung, stop, ziel, risiko_prozent=None, begruendung=""):
+        if self.trader is None:
+            return "Der Trading-Roboter läuft nur in der Trading-Zentrale."
+        return self.trader.manuell_eroeffnen(symbol, richtung, stop, ziel, risiko_prozent, begruendung)
+
+    def _paper_trade_schliessen(self, id):
+        if self.trader is None:
+            return "Der Trading-Roboter läuft nur in der Trading-Zentrale."
+        return self.trader.manuell_schliessen(id)
 
     def _backtest_starten(self, symbol=None, tage=730, strategie="eingestellt"):
         from trader import backtest, risiko

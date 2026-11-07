@@ -18,6 +18,11 @@ import einstellungen  # noqa: E402
 from trader import backtest, risiko, strategien  # noqa: E402
 from trading import historie  # noqa: E402
 
+# Auch Märkte testen, die der Roboter gerade nicht handelt (z. B. US100), damit man Verbesserungen sieht
+MAERKTE = list(dict.fromkeys(einstellungen.TRADER_MAERKTE + ["XAUUSD", "US100", "EURUSD"]))
+# Feintuning (Varianten) nur für Märkte, auf denen eine Strategie in die Nähe von „bestanden“ kam
+FEINTUNING = {"XAUUSD": "pullback", "EURUSD": "pullback"}
+
 MODUS = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].isdigit() else "rechnen"
 TAGE = int(next((a for a in sys.argv[1:] if a.isdigit()), 730))
 
@@ -34,7 +39,7 @@ def laden(markt, max_fehler_anteil, info=None, nur_gespeichert=False):
 
 
 if MODUS == "laden":
-    for markt in einstellungen.TRADER_MAERKTE:
+    for markt in MAERKTE:
         try:
             laden(markt, 1.0)
             print(f"{markt}: geladen", flush=True)
@@ -44,7 +49,7 @@ if MODUS == "laden":
 
 regeln = risiko.Regeln(einstellungen)
 texte = [f"# Strategie-Vergleich Trading-Roboter ({TAGE} Tage, Dukascopy)\n"]
-for markt in einstellungen.TRADER_MAERKTE:
+for markt in MAERKTE:
     try:
         info = {}
         kerzen = laden(markt, 0.2, info, nur_gespeichert=True)
@@ -53,6 +58,11 @@ for markt in einstellungen.TRADER_MAERKTE:
         ergebnisse = backtest.vergleich(markt, kerzen, regeln, einstellungen.TRADER_KONTO_START)
         text = (f"Datenlücken: {info.get('fehlend', 0)} Tage fehlen\n" if info.get("fehlend") else "") + \
             backtest.vergleich_text(ergebnisse, regeln) + "\n\n" + "\n\n".join(backtest.text(e, regeln) for e in ergebnisse)
+        if markt in FEINTUNING:
+            print(f"  {markt}: Feintuning mit {len(strategien.VARIANTEN)} Varianten ...", flush=True)
+            varianten = backtest.varianten_vergleich(markt, kerzen, regeln, einstellungen.TRADER_KONTO_START,
+                                                     FEINTUNING[markt])
+            text = backtest.varianten_text(varianten, regeln) + "\n\n" + text
     except Exception as fehler:
         text = f"{markt}: FEHLER {fehler}"
     print(text, flush=True)

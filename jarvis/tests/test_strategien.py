@@ -121,3 +121,72 @@ class TestVergleich(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestStopManagement(unittest.TestCase):
+    def konto_mit_long(self, management):
+        from trader import paper
+        k = paper.PaperKonto(10000)
+        sig = {"aktion": "BUY", "confidence": 70, "gruende": [], "teile": {},
+               "setup": {"richtung": "LONG", "einstieg": 100.0, "stop": 99.0, "ziel": 104.0, "kosten": 0.0,
+                         "management": management}}
+        k.eroeffnen("XAUUSD", sig, 10, 0, preis=100.0)
+        return k
+
+    def kerze(self, zeit, hoch, tief):
+        return {"zeit": zeit, "open": tief, "high": hoch, "low": tief, "close": hoch}
+
+    def test_breakeven(self):
+        k = self.konto_mit_long({"breakeven_r": 1.0})
+        k.kerze_pruefen("XAUUSD", self.kerze(900, 101.2, 99.8))          # 1,2 R im Plus -> Stop auf Einstand
+        self.assertEqual(k.zustand["offene"][0]["stop"], 100.0)
+        trades = k.kerze_pruefen("XAUUSD", self.kerze(1800, 100.5, 99.5))
+        self.assertEqual(trades[0]["ergebnis"], 0.0)                     # kein Verlust mehr
+        self.assertIn("Nachgezogener Stop", trades[0]["grund"])
+        self.assertEqual(trades[0]["r"], 0.0)
+
+    def test_trailing_nur_in_gewinnrichtung(self):
+        k = self.konto_mit_long({"trail_start_r": 1.5, "trail_r": 1.0})
+        k.kerze_pruefen("XAUUSD", self.kerze(900, 102.0, 100.5))         # 2 R -> Stop 101
+        self.assertEqual(k.zustand["offene"][0]["stop"], 101.0)
+        k.kerze_pruefen("XAUUSD", self.kerze(1800, 101.8, 101.2))        # schwächer -> Stop bleibt
+        self.assertEqual(k.zustand["offene"][0]["stop"], 101.0)
+        trades = k.kerze_pruefen("XAUUSD", self.kerze(2700, 101.5, 100.8))
+        self.assertAlmostEqual(trades[0]["r"], 1.0)
+
+    def test_ohne_management_unveraendert(self):
+        k = self.konto_mit_long({})
+        k.kerze_pruefen("XAUUSD", self.kerze(900, 103.0, 100.5))
+        self.assertEqual(k.zustand["offene"][0]["stop"], 99.0)
+
+
+class TestVarianten(unittest.TestCase):
+    def test_ziel_und_management(self):
+        sig = {"aktion": "BUY", "setup": {"richtung": "LONG", "einstieg": 100.0, "stop": 99.0, "ziel": 102.0,
+                                           "kosten": 0.0, "crv": 2.0, "crv_netto": 2.0}}
+        neu = strategien.variante_anwenden(sig, "trailing")
+        self.assertEqual(neu["setup"]["ziel"], 104.0)
+        self.assertEqual(neu["setup"]["management"]["trail_r"], 1.0)
+        self.assertEqual(sig["setup"]["ziel"], 102.0)                     # Original bleibt unverändert
+        self.assertIs(strategien.variante_anwenden(sig, "basis"), sig)
+
+    def test_zeitfenster(self):
+        zehn = datetime(2026, 11, 3, 10, 0, tzinfo=WIEN).timestamp()
+        fuenfzehn = datetime(2026, 11, 3, 15, 0, tzinfo=WIEN).timestamp()
+        self.assertTrue(strategien.im_zeitfenster("london", zehn))
+        self.assertFalse(strategien.im_zeitfenster("london", fuenfzehn))
+        self.assertTrue(strategien.im_zeitfenster("newyork", fuenfzehn))
+        self.assertTrue(strategien.im_zeitfenster("basis", fuenfzehn))
+
+    def test_varianten_vergleich(self):
+        kerzen = []
+        for tag in range(15):
+            for k in tag_mit_ausbruch(tag % 2 == 0):
+                kerzen.append(dict(k, zeit=k["zeit"] + tag * 86400))
+        kerzen = [k for k in kerzen if datetime.fromtimestamp(k["zeit"], WIEN).weekday() < 5]
+        e = backtest.varianten_vergleich("XAUUSD", kerzen, regeln(TRADER_KOSTEN={}), 10000, "orb_london",
+                                         ["basis", "breakeven", "newyork"], fenster=50)
+        self.assertEqual(len(e), 3)
+        ny = next(x for x in e if "newyork" in x["strategie"])
+        self.assertEqual(ny["statistik"]["trades"], 0)                    # London-Ausbrüche um 10:30 -> nicht im NY-Fenster
+        self.assertIn("VARIANTEN XAUUSD", backtest.varianten_text(e, regeln()))

@@ -234,6 +234,27 @@ class TestEngine(unittest.TestCase):
             return symbol, 2, "Test", (h1 if tf == "H1" else kerzen)
         return TradingEngine(self.e, holen, melden=self.meldungen.append, ordner=self.tmp.name)
 
+    def test_manueller_paper_trade(self):
+        k = kerzen_aus([140.0] * 60, DIENSTAG_10_UHR)
+        eng = self.engine(k, k, DIENSTAG_10_UHR)
+        with mock.patch("trader.engine.time.time", return_value=DIENSTAG_10_UHR + 60):
+            falsch = eng.manuell_eroeffnen("xauusd", "LONG", 141, 145)
+            self.assertIn("passen nicht", falsch)
+            zu_klein = eng.manuell_eroeffnen("XAUUSD", "LONG", 139, 140.5)        # CRV 0,5
+            self.assertIn("Abgelehnt", zu_klein)
+            text = eng.manuell_eroeffnen("XAUUSD", "kaufen", 139, 142, risiko_prozent=5, begruendung="Test")
+            self.assertIn("Manueller Paper-Trade #1", text)
+            self.assertIn("(1.0 %)", text)                                          # nie mehr als eingestellt
+            p = eng.konto.zustand["offene"][0]
+            self.assertTrue(p["manuell"])
+            self.assertEqual(p["strategie"], "Manuell")
+            ergebnis = eng.manuell_schliessen(1)
+            self.assertIn("geschlossen", ergebnis)
+            d = eng.status_daten()
+        self.assertEqual(d["statistik"]["trades"], 0)          # Roboter-Statistik bleibt sauber
+        self.assertEqual(d["statistik_manuell"]["trades"], 1)
+        self.assertIn("Keine offene Position", eng.manuell_schliessen(99))
+
     def test_eroeffnet_paper_trade_mit_begruendung(self):
         k = kerzen_aus(long_reihe() + [long_reihe()[-1]], DIENSTAG_10_UHR)
         h1 = kerzen_aus([100 + i * 0.8 for i in range(250)], DIENSTAG_10_UHR, 3600, 0.5)

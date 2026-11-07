@@ -25,7 +25,7 @@ def tagesbericht(engine, tag):
     konto = engine.konto.zustand
     trades = _trades_vom_tag(engine, tag)
     heute = paper.statistik(trades, konto["tagesstart_equity"])
-    gesamt = paper.statistik(konto["trades"], konto["start"])
+    gesamt = paper.statistik([t for t in konto["trades"] if not t.get("manuell")], konto["start"])  # nur Roboter
     entscheidungen = _entscheidungen_vom_tag(engine, tag)
     f = lambda x, n=2: "–" if x is None else ("∞" if x == float("inf") else f"{x:.{n}f}")
     zeilen = [f"# Trading-Tagesbericht {tag} (PAPER, Stufe {engine.stufe})", "",
@@ -47,7 +47,7 @@ def tagesbericht(engine, tag):
                f"- Profitabel: {heute['gewinner']}, verlustreich: {heute['verlierer']}"]
     for t in trades:
         zeilen.append(f"  - {t['symbol']} {t['richtung']} {t['einstieg']} → {t['ausstieg']} ({t['grund']}): "
-                      f"{t['ergebnis']:+.2f} $ / {t['r']:+.2f} R, Confidence {t['confidence']}")
+                      f"{t['ergebnis']:+.2f} $ / {t['r']:+.2f} R, " + ("MANUELL" if t.get('manuell') else f"Confidence {t['confidence']}"))
     zeilen += ["", "## Performance", "",
                f"- Tagesergebnis: {heute['netto']:+.2f} $",
                f"- Gesamt seit Start: {gesamt['netto']:+.2f} $ (Konto {konto['balance']:.2f} $)",

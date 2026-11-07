@@ -50,6 +50,9 @@ jobs:
       - name: Daten laden und Bericht erstellen
         run: python main.py --anzahl "$ANZAHL"
 
+      - name: Muster der Top-Trader auswerten (Einstiegsart, Trend, Uhrzeit, Haltedauer)
+        run: python muster.py
+
       - name: Bericht im Repository speichern
         run: |
           git config user.name "github-actions[bot]"

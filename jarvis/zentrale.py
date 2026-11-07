@@ -55,6 +55,7 @@ WERKZEUG_NAMEN = {
     "tagebuch_eintragen": "Tagebuch", "tagebuch_auswertung": "Tagebuch-Auswertung",
     "an_claude_melden": "An Claude gemeldet", "neuigkeiten": "Neuigkeiten",
     "trader_status": "Roboter-Status", "trader_steuern": "Roboter gesteuert", "backtest_starten": "Backtest",
+    "paper_trade_eroeffnen": "Manueller Paper-Trade", "paper_trade_schliessen": "Paper-Trade geschlossen",
     "trading_tagesbericht": "Tagesbericht",
     "medien_steuern": "Medien", "datei_suchen": "Dateisuche", "datei_oeffnen": "Datei geöffnet",
     "pc_sperren": "PC gesperrt",
@@ -132,6 +133,9 @@ class Freigabe:
         vorher = zustand.modus
         zustand.setze_modus("wartet")
         zustand.protokoll(f"Wartet auf Freigabe: {beschreibung}", "warnung")
+        if telegram:  # nur zur Info – freigeben geht aus Sicherheitsgründen nur am PC
+            threading.Thread(target=telegram.senden, daemon=True,
+                             args=(f"⚠️ Jarvis wartet AM PC auf deine Freigabe: {beschreibung}",)).start()
         threading.Thread(target=stimme.sprechen, daemon=True,
                          args=(f"Ich brauche deine Freigabe: {beschreibung}. Soll ich?",)).start()
         self._ereignis.wait(einstellungen.BESTAETIGUNG_SEKUNDEN)
@@ -152,10 +156,15 @@ freigabe = Freigabe()
 backtest_stand = {"laeuft": False, "text": ""}
 
 
+telegram = None   # wird in main() gesetzt, wenn TELEGRAM_TOKEN in .env steht
+
+
 def melden(text, kategorie="alarm", sprechen=True):
-    """Jarvis meldet sich von selbst: Meldung in der Zentrale + Stimme."""
+    """Jarvis meldet sich von selbst: Meldung in der Zentrale + Stimme (+ Telegram, falls eingerichtet)."""
     zustand.melde(kategorie, text)
     zustand.protokoll(text, "warnung")
+    if telegram and getattr(einstellungen, "TELEGRAM_MELDUNGEN", True):
+        threading.Thread(target=telegram.senden, args=(f"🔔 {text}",), daemon=True).start()
     if sprechen:
         stimme.sprechen(text)
 
@@ -252,12 +261,19 @@ def krypto_daten():
 
 def denker(gehirn):
     while True:
-        frage, quelle = auftraege.get()
+        frage, quelle, *rueckruf = auftraege.get()
         zustand.sage("du", frage)
         zustand.protokoll(f"Befehl ({quelle}): {frage}", "befehl")
         zustand.setze_modus("denkt")
-        antwort = gehirn.frage(frage)
+        try:
+            antwort = gehirn.frage(frage)
+        except Exception as fehler:
+            antwort = f"Da ist etwas schiefgegangen: {fehler}"
         zustand.sage("jarvis", antwort)
+        if rueckruf:  # Frage kam vom Handy: Antwort zurückschicken, am PC nicht vorlesen
+            rueckruf[0](antwort)
+            zustand.setze_modus("bereit")
+            continue
         zustand.setze_modus("spricht")
         stimme.sprechen(antwort)
         zustand.setze_modus("bereit")
@@ -618,6 +634,20 @@ def main():
         werkzeugkasten.trader = engine
         engine.starten()
         zustand.protokoll(f"Trading-Roboter gestartet (Stufe {engine.stufe}, PAPER, Status {engine.status})", "ok")
+
+    global telegram
+    if os.environ.get("TELEGRAM_TOKEN"):
+        from telegram_bot import TelegramBot
+
+        def frage_vom_handy(text):
+            fertig, ergebnis = threading.Event(), {}
+            auftraege.put((f"[Nachricht vom Handy über Telegram – antworte kurz] {text}", "Telegram", lambda antwort: (ergebnis.update(text=antwort), fertig.set())))
+            return ergebnis["text"] if fertig.wait(300) else "Das dauert länger – ich melde mich, sobald ich fertig bin."
+        telegram = TelegramBot(os.environ["TELEGRAM_TOKEN"], os.environ.get("TELEGRAM_CHAT_ID"),
+                               fragen=frage_vom_handy, trader=werkzeugkasten.trader)
+        telegram.starten()
+        zustand.protokoll("Telegram verbunden" if telegram.chat_id else
+                          "Telegram: schreib deinem Bot /start, um deine Chat-ID zu bekommen", "ok")
 
     gehirn = Gehirn(werkzeugkasten, beobachter=lambda name, eingaben: zustand.protokoll(
         WERKZEUG_NAMEN.get(name, name) + (f": {next(iter(eingaben.values()))}" if eingaben else ""), "werkzeug"))

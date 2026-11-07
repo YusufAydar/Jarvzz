@@ -39,8 +39,15 @@ jobs:
       - name: Probelauf-Bericht anzeigen
         run: cat probelauf/aktuell.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Muster der Top-Trader (Probelauf)
+        run: |
+          python muster.py --db probelauf/test.db --ausgabe probelauf/muster.md --max-coins 5
+          cat probelauf/muster.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Probelauf-Bericht zum Download anhängen
         uses: actions/upload-artifact@v4
         with:
           name: probelauf-bericht
-          path: probelauf/aktuell.md
+          path: |
+            probelauf/aktuell.md
+            probelauf/muster.md
