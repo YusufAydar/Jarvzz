@@ -1,115 +1,118 @@
-# Hyperliquid Top-Trader – Tagesbericht 27.11.2026
+# Hyperliquid Top-Trader – Tagesbericht 28.11.2026
 
-Erstellt: 27.11.2026 07:39 UTC · Analysierte Trader: **10** · Davon in den letzten 24 h aktiv: **8**
+Erstellt: 28.11.2026 07:31 UTC · Analysierte Trader: **10** · Davon in den letzten 24 h aktiv: **9**
 
 > „Einig“ heißt: mindestens 3 Trader handeln den Coin und mindestens 70 % davon in dieselbe Richtung.
 > Kein Anlagerat – nur eine Auswertung öffentlicher Daten.
 
 ## 1. Wo sind sich die Top-Trader einig? (letzte 24 Stunden)
 
-- 🔴 **HYPE: VERKAUFEN** – 1 Käufer, 4 Verkäufer, netto -1.009.633 $
-- 🔴 **xyz:ANT: VERKAUFEN** – 1 Käufer, 4 Verkäufer, netto -2.779.587 $
-- 🟢 **xyz:SP500: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +4.283.573 $
-- 🔴 **xyz:MU: VERKAUFEN** – 1 Käufer, 4 Verkäufer, netto -487.876 $
-- 🟢 **xyz:XYZ100: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +3.335.984 $
-- 🔴 **SOL: VERKAUFEN** – 1 Käufer, 4 Verkäufer, netto -936.189 $
-- 🔴 **xyz:EWY: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -605.308 $
-- 🔴 **xyz:GOOGL: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -1.503.443 $
-- 🔴 **xyz:NBIS: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -1.792.296 $
-- 🔴 **xyz:DRAM: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -210.888 $
-- 🟢 **xyz:AAPL: KAUFEN** – 3 Käufer, 1 Verkäufer, netto +179.393 $
-- 🔴 **XRP: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -251.100 $
-- 🔴 **xyz:CL: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -96.752 $
-- 🟢 **xyz:CRCL: KAUFEN** – 4 Käufer, 1 Verkäufer, netto +155.686 $
-- 🟢 **PONS: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +45.208 $
-- 🔴 **LIT: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -85.834 $
-- 🔴 **ENA: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -11.648 $
-- 🟢 **UNI: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +3.993 $
+- 🟢 **HYPE: KAUFEN** – 4 Käufer, 1 Verkäufer, netto +1.511.120 $
+- 🟢 **xyz:ANT: KAUFEN** – 4 Käufer, 1 Verkäufer, netto +2.293.527 $
+- 🟢 **ZEC: KAUFEN** – 4 Käufer, 1 Verkäufer, netto +1.466.594 $
+- 🔴 **xyz:BRENTOIL: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -192.696 $
+- 🟢 **xyz:SNDK: KAUFEN** – 4 Käufer, 1 Verkäufer, netto +1.779.292 $
+- 🔴 **xyz:GOOGL: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -3.170.156 $
+- 🟢 **xyz:NVDA: KAUFEN** – 3 Käufer, 1 Verkäufer, netto +423.124 $
+- 🔴 **xyz:GOLD: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -1.389.667 $
+- 🟢 **xyz:SPCX: KAUFEN** – 4 Käufer, 1 Verkäufer, netto +643.738 $
+- 🟢 **xyz:AAPL: KAUFEN** – 3 Käufer, 1 Verkäufer, netto +738.288 $
+- 🟢 **xyz:CL: KAUFEN** – 3 Käufer, 1 Verkäufer, netto +75.467 $
+- 🟢 **xyz:MRVL: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +63.473 $
+- 🔴 **xyz:INTC: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -12.126 $
+- 🔴 **xyz:META: VERKAUFEN** – 0 Käufer, 4 Verkäufer, netto -79.757 $
+- 🟢 **SUI: KAUFEN** – 3 Käufer, 1 Verkäufer, netto +48.187 $
+- 🔴 **xyz:AMZN: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto +10.199 $
+- 🟢 **BNB: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +13.614 $
+- 🔴 **ENA: VERKAUFEN** – 1 Käufer, 3 Verkäufer, netto -5.494 $
+- 🔴 **WLD: VERKAUFEN** – 0 Käufer, 3 Verkäufer, netto -4.306 $
+- 🟢 **xyz:ORCL: KAUFEN** – 3 Käufer, 0 Verkäufer, netto +26.524 $
 
 ## 2. Was wurde in den letzten 24 Stunden gehandelt?
 
 | Coin | Käufer | Verkäufer | Netto gekauft | Volumen | Einig? |
 |---|---:|---:|---:|---:|---|
-| BTC | 2 | 4 | -19.274.177 $ | 46.375.022 $ |  |
-| ETH | 3 | 2 | -3.471.558 $ | 16.876.110 $ |  |
-| HYPE | 1 | 4 | -1.009.633 $ | 11.970.179 $ | VERKAUFEN |
-| xyz:ANT | 1 | 4 | -2.779.587 $ | 10.959.470 $ | VERKAUFEN |
-| xyz:SKHX | 2 | 0 | +2.360.528 $ | 8.724.969 $ |  |
-| xyz:SP500 | 3 | 0 | +4.283.573 $ | 5.223.324 $ | KAUFEN |
-| ZEC | 3 | 2 | +301.830 $ | 4.435.527 $ |  |
-| xyz:MU | 1 | 4 | -487.876 $ | 4.400.528 $ | VERKAUFEN |
-| xyz:NVDA | 2 | 2 | -247.045 $ | 4.191.924 $ |  |
-| xyz:XYZ100 | 3 | 0 | +3.335.984 $ | 3.924.466 $ | KAUFEN |
-| xyz:SOXL | 1 | 1 | -1.472.589 $ | 3.904.571 $ |  |
-| xyz:SNDK | 2 | 3 | +423.093 $ | 3.586.471 $ |  |
-| SOL | 1 | 4 | -936.189 $ | 3.426.469 $ | VERKAUFEN |
-| xyz:SMSN | 1 | 1 | +2.173.369 $ | 2.308.850 $ |  |
-| xyz:EWY | 0 | 3 | -605.308 $ | 2.222.135 $ | VERKAUFEN |
-| xyz:GOOGL | 0 | 3 | -1.503.443 $ | 2.089.971 $ | VERKAUFEN |
-| xyz:GOLD | 1 | 2 | -1.936.355 $ | 1.958.351 $ |  |
-| xyz:TSLA | 0 | 2 | -1.392.667 $ | 1.919.024 $ |  |
-| xyz:NBIS | 0 | 3 | -1.792.296 $ | 1.848.303 $ | VERKAUFEN |
-| xyz:KORU | 0 | 2 | -1.609.769 $ | 1.733.038 $ |  |
-| xyz:AMD | 2 | 1 | +958.164 $ | 1.301.538 $ |  |
-| xyz:DRAM | 1 | 3 | -210.888 $ | 1.164.743 $ | VERKAUFEN |
-| xyz:AAPL | 3 | 1 | +179.393 $ | 1.061.201 $ | KAUFEN |
-| xyz:SPCX | 2 | 2 | -553.676 $ | 1.008.003 $ |  |
-| XRP | 1 | 3 | -251.100 $ | 963.679 $ | VERKAUFEN |
+| BTC | 3 | 4 | -3.876.781 $ | 86.642.216 $ |  |
+| HYPE | 4 | 1 | +1.511.120 $ | 17.081.086 $ | KAUFEN |
+| ETH | 2 | 3 | -2.615.780 $ | 10.892.774 $ |  |
+| xyz:XYZ100 | 2 | 1 | +1.558.582 $ | 8.064.774 $ |  |
+| xyz:SP500 | 2 | 1 | +3.664.439 $ | 6.602.462 $ |  |
+| xyz:SKHX | 2 | 1 | +1.314.742 $ | 6.155.884 $ |  |
+| xyz:ANT | 4 | 1 | +2.293.527 $ | 5.478.545 $ | KAUFEN |
+| xyz:SOXL | 1 | 1 | -2.106.255 $ | 5.324.702 $ |  |
+| ZEC | 4 | 1 | +1.466.594 $ | 4.982.969 $ | KAUFEN |
+| xyz:BRENTOIL | 1 | 3 | -192.696 $ | 4.131.446 $ | VERKAUFEN |
+| xyz:MU | 2 | 3 | +695.521 $ | 4.055.706 $ |  |
+| xyz:SNDK | 4 | 1 | +1.779.292 $ | 3.909.606 $ | KAUFEN |
+| xyz:GOOGL | 0 | 3 | -3.170.156 $ | 3.272.653 $ | VERKAUFEN |
+| SOL | 3 | 2 | +516.015 $ | 3.133.214 $ |  |
+| xyz:NVDA | 3 | 1 | +423.124 $ | 2.768.000 $ | KAUFEN |
+| xyz:SMSN | 1 | 1 | +2.057.516 $ | 2.261.617 $ |  |
+| @142 | 0 | 1 | -594.572 $ | 1.881.825 $ |  |
+| WLFI | 1 | 1 | +235.796 $ | 1.736.890 $ |  |
+| xyz:GOLD | 1 | 3 | -1.389.667 $ | 1.734.820 $ | VERKAUFEN |
+| xyz:CRCL | 3 | 2 | +1.013.048 $ | 1.367.671 $ |  |
+| xyz:TSLA | 2 | 0 | +1.295.697 $ | 1.342.194 $ |  |
+| XRP | 2 | 2 | -173.867 $ | 1.268.649 $ |  |
+| xyz:SPCX | 4 | 1 | +643.738 $ | 1.223.144 $ | KAUFEN |
+| xyz:SKHY | 2 | 1 | -867.018 $ | 1.056.181 $ |  |
+| xyz:DRAM | 2 | 2 | +26.800 $ | 1.020.634 $ |  |
 
-_… und 175 weitere Coins mit weniger Volumen._
+_… und 181 weitere Coins mit weniger Volumen._
 
 ## 3. Offene Positionen gerade jetzt: Long oder Short?
 
 | Coin | Long | Short | Wert Long | Wert Short | Einig? |
 |---|---:|---:|---:|---:|---|
-| BTC | 1 | 6 | 242.591 $ | 166.687.799 $ | SHORT |
-| ETH | 1 | 6 | 59.441 $ | 98.114.033 $ | SHORT |
-| HYPE | 2 | 6 | 146.608 $ | 55.782.793 $ | SHORT |
-| SOL | 1 | 5 | 25.747 $ | 35.995.927 $ | SHORT |
-| ZEC | 1 | 5 | 50.133 $ | 34.103.169 $ | SHORT |
-| XRP | 2 | 4 | 1.866.961 $ | 8.012.798 $ |  |
-| NEAR | 2 | 5 | 337.078 $ | 5.352.040 $ | SHORT |
-| PUMP | 1 | 4 | 4.663 $ | 5.360.431 $ | SHORT |
-| DOGE | 1 | 5 | 165.650 $ | 4.377.243 $ | SHORT |
-| LINK | 1 | 4 | 5 $ | 3.590.593 $ | SHORT |
-| VVV | 0 | 6 | 0 $ | 2.867.669 $ | SHORT |
-| AAVE | 1 | 4 | 1.858 $ | 2.355.695 $ | SHORT |
-| ENA | 2 | 4 | 93.494 $ | 2.153.353 $ |  |
-| TRX | 1 | 2 | 2.004.521 $ | 80.680 $ |  |
-| XPL | 0 | 6 | 0 $ | 2.050.105 $ | SHORT |
-| UNI | 1 | 4 | 823 $ | 2.042.220 $ | SHORT |
-| LIT | 2 | 3 | 1.090.739 $ | 477.487 $ |  |
-| WLD | 0 | 5 | 0 $ | 1.530.710 $ | SHORT |
-| kPEPE | 0 | 5 | 0 $ | 1.448.586 $ | SHORT |
-| ZRO | 1 | 3 | 325.163 $ | 1.004.083 $ | SHORT |
+| BTC | 2 | 5 | 3.197.292 $ | 179.426.300 $ | SHORT |
+| ETH | 1 | 6 | 72.397 $ | 91.364.547 $ | SHORT |
+| HYPE | 1 | 7 | 126.503 $ | 50.119.510 $ | SHORT |
+| SOL | 1 | 5 | 19.990 $ | 31.958.883 $ | SHORT |
+| ZEC | 0 | 6 | 0 $ | 28.535.002 $ | SHORT |
+| XRP | 2 | 4 | 1.646.011 $ | 6.083.355 $ |  |
+| NEAR | 1 | 6 | 719 $ | 6.194.812 $ | SHORT |
+| PUMP | 0 | 5 | 0 $ | 5.482.760 $ | SHORT |
+| DOGE | 1 | 5 | 100.141 $ | 4.146.437 $ | SHORT |
+| LINK | 1 | 4 | 5 $ | 3.284.752 $ | SHORT |
+| VVV | 1 | 5 | 8.335 $ | 2.609.755 $ | SHORT |
+| AAVE | 0 | 5 | 0 $ | 2.223.806 $ | SHORT |
+| TRX | 1 | 2 | 1.992.845 $ | 79.412 $ |  |
+| UNI | 1 | 4 | 1.288 $ | 2.043.400 $ | SHORT |
+| LIT | 2 | 3 | 1.469.098 $ | 479.694 $ |  |
+| XPL | 1 | 5 | 1.730 $ | 1.895.013 $ | SHORT |
+| ENA | 1 | 5 | 90.205 $ | 1.800.336 $ | SHORT |
+| WLD | 0 | 5 | 0 $ | 1.462.405 $ | SHORT |
+| kPEPE | 1 | 4 | 1.584 $ | 1.408.904 $ | SHORT |
+| BNB | 1 | 5 | 711.145 $ | 452.190 $ | SHORT |
 
 ## 4. Aktivität pro Trader (letzte 24 Stunden)
 
 | Rang | Trader | Gekauft | Verkauft | Wichtigste Coins (netto) |
 |---:|---|---:|---:|---|
-| 2 | [0xb695…a92d](https://app.hyperliquid.xyz/explorer/address/0xb695651daa495f59dd2725c6fe98322d8b51a92d) | 3.024.488 $ | 0 $ | BTC +3.023.332 $, NEAR +1.156 $ |
-| 4 | [BobbyBigSize](https://app.hyperliquid.xyz/explorer/address/0x7fdafde5cfb5465924316eced2d3715494c517d1) | 4.280.831 $ | 29.009.547 $ | BTC -14.548.320 $, ETH -6.892.110 $, xyz:GOLD -1.935.583 $ |
-| 5 | [0xdf95…7d72](https://app.hyperliquid.xyz/explorer/address/0xdf954bbe619273a56e0cfa90dad8382195dc7d72) | 1.511.920 $ | 2.358.909 $ | HYPE -914.471 $, BTC -521.333 $, xyz:SP500 +310.163 $ |
-| 6 | [0xfc27…9d9d](https://app.hyperliquid.xyz/explorer/address/0xfc27136e42af1732ddc9ce2605ea9bff1b959d9d) | 19.179.203 $ | 21.114.616 $ | xyz:XYZ100 +2.786.064 $, xyz:ANT -2.289.622 $, xyz:SMSN +2.176.702 $ |
-| 7 | [0xf5d8…ad53](https://app.hyperliquid.xyz/explorer/address/0xf5d81a135f756ca16544e53c20fc20643ec3ad53) | 18.094.801 $ | 17.278.780 $ | BTC +693.285 $, ETH +159.065 $, INIT -32.112 $ |
-| 8 | [0xecb6…2b00](https://app.hyperliquid.xyz/explorer/address/0xecb63caa47c7c4e77f60f1ce858cf28dc2b82b00) | 15.222.507 $ | 18.484.133 $ | BTC -6.569.211 $, ETH +3.211.397 $, xyz:SP500 +2.842.307 $ |
-| 9 | [0x0b8a…d4f8](https://app.hyperliquid.xyz/explorer/address/0x0b8aa35c28b7c6ab18f11dc168f437a8a69fd4f8) | 1.559.054 $ | 0 $ | HYPE +1.559.054 $ |
-| 10 | [0x0242…ffa1](https://app.hyperliquid.xyz/explorer/address/0x024294c53a69c1e6b39810b3fac87385752fffa1) | 4.077.413 $ | 5.972.049 $ | xyz:NBIS -1.326.131 $, xyz:GOOGL -1.256.239 $, xyz:KORU -931.460 $ |
+| 1 | [0x87f9…e2cf](https://app.hyperliquid.xyz/explorer/address/0x87f9cd15f5050a9283b8896300f7c8cf69ece2cf) | 6.490.098 $ | 6.496.631 $ | BTC -6.532 $ |
+| 3 | [0xb695…a92d](https://app.hyperliquid.xyz/explorer/address/0xb695651daa495f59dd2725c6fe98322d8b51a92d) | 1.710.537 $ | 0 $ | BTC +1.710.537 $ |
+| 4 | [0xdf95…7d72](https://app.hyperliquid.xyz/explorer/address/0xdf954bbe619273a56e0cfa90dad8382195dc7d72) | 556.860 $ | 1.830.864 $ | BTC -603.387 $, xyz:SKHX -327.208 $, xyz:XYZ100 -220.712 $ |
+| 5 | [BobbyBigSize](https://app.hyperliquid.xyz/explorer/address/0x7fdafde5cfb5465924316eced2d3715494c517d1) | 11.772.880 $ | 7.263.910 $ | BTC +5.476.220 $, ETH -2.307.233 $, xyz:GOLD -1.115.616 $ |
+| 6 | [0xf5d8…ad53](https://app.hyperliquid.xyz/explorer/address/0xf5d81a135f756ca16544e53c20fc20643ec3ad53) | 14.612.399 $ | 14.142.409 $ | ETH +153.239 $, BTC +152.450 $, HYPE +92.120 $ |
+| 7 | [0xfc27…9d9d](https://app.hyperliquid.xyz/explorer/address/0xfc27136e42af1732ddc9ce2605ea9bff1b959d9d) | 32.459.432 $ | 26.203.858 $ | BTC -7.740.383 $, xyz:SP500 +3.646.134 $, xyz:SOXL -2.111.312 $ |
+| 8 | [0xecb6…2b00](https://app.hyperliquid.xyz/explorer/address/0xecb63caa47c7c4e77f60f1ce858cf28dc2b82b00) | 30.007.618 $ | 32.410.975 $ | BTC -2.865.684 $, HYPE +803.126 $, ZEC +695.507 $ |
+| 9 | [0x0242…ffa1](https://app.hyperliquid.xyz/explorer/address/0x024294c53a69c1e6b39810b3fac87385752fffa1) | 7.728.126 $ | 9.411.113 $ | xyz:GOOGL -3.122.294 $, xyz:ANT +1.702.256 $, xyz:BRENTOIL -1.430.744 $ |
+| 10 | [0x0b8a…d4f8](https://app.hyperliquid.xyz/explorer/address/0x0b8aa35c28b7c6ab18f11dc168f437a8a69fd4f8) | 729.507 $ | 0 $ | HYPE +729.507 $ |
 
 ## 5. Statistik pro Trader (gesamte gespeicherte Historie)
 
 | Rang | Trader | PnL Monat (Rangliste) | Gewinnrate | PnL aus Trades | Trades | Ø Haltedauer | Lieblings-Coins | Hebel Ø / max | Größter Verlust | Daten ab |
 |---:|---|---:|---:|---:|---:|---:|---|---|---:|---|
-| 1 | [0x87f9…e2cf](https://app.hyperliquid.xyz/explorer/address/0x87f9cd15f5050a9283b8896300f7c8cf69ece2cf) | +41.327.657 $ | 1 % | -27 $ | 81 | 0 Min | BTC 100 % | – / – | -1 $ (BTC) | 13.06.2025 |
-| 2 | [0xb695…a92d](https://app.hyperliquid.xyz/explorer/address/0xb695651daa495f59dd2725c6fe98322d8b51a92d) | +37.046.933 $ | 50 % | +163.341 $ | 4 | 8,1 Std | BTC 39 %, ETH 30 %, xyz:ANT 11 % | 19,1x / 20,0x | -4.337 $ (ZEC) | 22.10.2026 |
-| 3 | [0x45d2…4029](https://app.hyperliquid.xyz/explorer/address/0x45d26f28196d226497130c4bac709d808fed4029) | +37.027.558 $ | 83 % | -898.711 $ | 6 | 2,6 Std | BTC 36 %, ZEC 13 %, xyz:SP500 12 % | 14,7x / 20,0x | -1.051.783 $ (xyz:MU) | 22.08.2026 |
-| 4 | [BobbyBigSize](https://app.hyperliquid.xyz/explorer/address/0x7fdafde5cfb5465924316eced2d3715494c517d1) | +36.322.439 $ | 65 % | +7.659.571 $ | 23 | 4,4 Tage | BTC 31 %, ZEC 14 %, ETH 14 % | 13,0x / 30,0x | -37.227 $ (NEAR) | 05.11.2026 |
-| 5 | [0xdf95…7d72](https://app.hyperliquid.xyz/explorer/address/0xdf954bbe619273a56e0cfa90dad8382195dc7d72) | +33.774.763 $ | 50 % | +140.675 $ | 139 | 33,8 Std | ETH 31 %, BTC 25 %, xyz:NVDA 7 % | 28,5x / 40,0x | -8.740 $ (xyz:SP500) | 12.11.2026 |
-| 6 | [0xfc27…9d9d](https://app.hyperliquid.xyz/explorer/address/0xfc27136e42af1732ddc9ce2605ea9bff1b959d9d) | +30.550.234 $ | 57 % | +2.737.524 $ | 174 | 37,9 Std | BTC 17 %, xyz:SKHX 11 %, xyz:SOXL 9 % | 22,3x / 25,0x | -661.067 $ (xyz:SKHX) | 13.11.2026 |
-| 7 | [0xf5d8…ad53](https://app.hyperliquid.xyz/explorer/address/0xf5d81a135f756ca16544e53c20fc20643ec3ad53) | +29.643.171 $ | 44 % | +13.851 $ | 9103 | 1,4 Std | BTC 48 %, ETH 14 %, HYPE 14 % | 3,0x / 3,0x | -19.638 $ (BTC) | 05.11.2026 |
-| 8 | [0xecb6…2b00](https://app.hyperliquid.xyz/explorer/address/0xecb63caa47c7c4e77f60f1ce858cf28dc2b82b00) | +25.672.100 $ | 66 % | -19.035 $ | 136 | 20,0 Std | BTC 43 %, ETH 12 %, xyz:NVDA 5 % | 12,8x / 20,0x | -62.889 $ (BTC) | 11.11.2026 |
-| 9 | [0x0b8a…d4f8](https://app.hyperliquid.xyz/explorer/address/0x0b8aa35c28b7c6ab18f11dc168f437a8a69fd4f8) | +19.887.155 $ | 24 % | +82.851 $ | 25 | 3,1 Tage | HYPE 66 %, @107 32 %, BTC 1 % | 7,0x / 7,0x | -10 $ (kLUNC) | 25.07.2025 |
-| 10 | [0x0242…ffa1](https://app.hyperliquid.xyz/explorer/address/0x024294c53a69c1e6b39810b3fac87385752fffa1) | +19.232.945 $ | 64 % | +1.195.371 $ | 87 | 30,9 Std | xyz:SKHX 31 %, xyz:NVDA 8 %, xyz:BRENTOIL 8 % | – / – | -159.377 $ (xyz:SKHY) | 05.11.2026 |
+| 1 | [0x87f9…e2cf](https://app.hyperliquid.xyz/explorer/address/0x87f9cd15f5050a9283b8896300f7c8cf69ece2cf) | +47.236.759 $ | 11 % | +6.893 $ | 100 | 2 Min | BTC 100 % | – / – | -392 $ (BTC) | 13.06.2025 |
+| 2 | [0x45d2…4029](https://app.hyperliquid.xyz/explorer/address/0x45d26f28196d226497130c4bac709d808fed4029) | +42.428.226 $ | 83 % | -898.711 $ | 6 | 2,6 Std | BTC 36 %, ZEC 13 %, xyz:SP500 12 % | 14,6x / 20,0x | -1.051.783 $ (xyz:MU) | 22.08.2026 |
+| 3 | [0xb695…a92d](https://app.hyperliquid.xyz/explorer/address/0xb695651daa495f59dd2725c6fe98322d8b51a92d) | +39.118.765 $ | 50 % | +163.341 $ | 4 | 8,1 Std | BTC 40 %, ETH 30 %, xyz:ANT 11 % | 19,0x / 20,0x | -4.337 $ (ZEC) | 22.10.2026 |
+| 4 | [0xdf95…7d72](https://app.hyperliquid.xyz/explorer/address/0xdf954bbe619273a56e0cfa90dad8382195dc7d72) | +38.207.469 $ | 49 % | +167.568 $ | 155 | 33,9 Std | ETH 31 %, BTC 25 %, xyz:NVDA 7 % | 28,6x / 40,0x | -8.740 $ (xyz:SP500) | 12.11.2026 |
+| 5 | [BobbyBigSize](https://app.hyperliquid.xyz/explorer/address/0x7fdafde5cfb5465924316eced2d3715494c517d1) | +38.106.211 $ | 65 % | +7.659.571 $ | 23 | 4,4 Tage | BTC 32 %, ETH 14 %, ZEC 14 % | 20,2x / 30,0x | -37.227 $ (NEAR) | 05.11.2026 |
+| 6 | [0xf5d8…ad53](https://app.hyperliquid.xyz/explorer/address/0xf5d81a135f756ca16544e53c20fc20643ec3ad53) | +33.253.157 $ | 44 % | +16.551 $ | 9646 | 1,3 Std | BTC 48 %, ETH 14 %, HYPE 14 % | 3,0x / 3,0x | -19.638 $ (BTC) | 05.11.2026 |
+| 7 | [0xfc27…9d9d](https://app.hyperliquid.xyz/explorer/address/0xfc27136e42af1732ddc9ce2605ea9bff1b959d9d) | +32.380.182 $ | 54 % | +1.894.683 $ | 199 | 36,7 Std | BTC 19 %, xyz:SKHX 10 %, xyz:SOXL 9 % | 22,7x / 25,0x | -1.251.555 $ (xyz:ANT) | 13.11.2026 |
+| 8 | [0xecb6…2b00](https://app.hyperliquid.xyz/explorer/address/0xecb63caa47c7c4e77f60f1ce858cf28dc2b82b00) | +29.058.995 $ | 66 % | -9.085 $ | 145 | 19,9 Std | BTC 44 %, ETH 10 %, xyz:XYZ100 5 % | 11,3x / 20,0x | -62.889 $ (BTC) | 11.11.2026 |
+| 9 | [0x0242…ffa1](https://app.hyperliquid.xyz/explorer/address/0x024294c53a69c1e6b39810b3fac87385752fffa1) | +22.714.344 $ | 62 % | +2.128.025 $ | 96 | 29,6 Std | xyz:SKHX 30 %, xyz:BRENTOIL 8 %, xyz:NVDA 8 % | – / – | -159.377 $ (xyz:SKHY) | 05.11.2026 |
+| 10 | [0x0b8a…d4f8](https://app.hyperliquid.xyz/explorer/address/0x0b8aa35c28b7c6ab18f11dc168f437a8a69fd4f8) | +22.029.839 $ | 24 % | +82.851 $ | 25 | 3,1 Tage | HYPE 69 %, @107 30 %, BTC 1 % | 7,0x / 7,0x | -10 $ (kLUNC) | 25.07.2025 |
 
 **So liest du die Tabelle:**
 - *Gewinnrate*: Anteil der abgeschlossenen Trades mit Gewinn.
